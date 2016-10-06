@@ -36,6 +36,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.Range;
 
+import org.opencv.android.OpenCVLoader;
+
 @TeleOp(name="Designosaurs Drive", group="TeleOp")
 public class DesignosaursTeleOp extends LinearOpMode {
 	private DesignosaursHardware robot = new DesignosaursHardware();
@@ -48,7 +50,10 @@ public class DesignosaursTeleOp extends LinearOpMode {
 		robot.init(hardwareMap);
 
 		telemetry.addData("Say", "Designosaurs 2017");
-		telemetry.addData("Say", "Ready to start!");
+		telemetry.addData("Say", "Loading OpenCV...");
+		telemetry.update();
+
+		telemetry.addData("Say", "OpenCV" + (OpenCVLoader.initDebug() ? " not " : "") + " loaded!");
 		telemetry.update();
 
 		waitForStart();
