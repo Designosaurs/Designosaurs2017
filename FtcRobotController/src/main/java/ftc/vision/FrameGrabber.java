@@ -66,7 +66,7 @@ public class FrameGrabber implements CameraBridgeViewBase.CvCameraViewListener2 
 		cameraBridgeViewBase.setCvCameraViewListener(this);
 	}
 
-	private boolean isImageProcessorNull(){
+	private boolean isImageProcessorNull() {
 		if(imageProcessor == null) {
 			Log.e(TAG, "imageProcessor is null! Call setImageProcessor() to set it.");
 			return true;
@@ -75,18 +75,18 @@ public class FrameGrabber implements CameraBridgeViewBase.CvCameraViewListener2 
 		}
 	}
 
-	public void grabSingleFrame(){
+	public void grabSingleFrame() {
 		if(isImageProcessorNull()) return;
 		mode = FrameGrabberMode.SINGLE;
 		resultReady = false;
 	}
 
-	public void throwAwayFrames(){
+	public void throwAwayFrames() {
 		mode = FrameGrabberMode.THROWAWAY;
 		resultReady = false;
 	}
 
-	public void stopFrameGrabber(){
+	public void stopFrameGrabber() {
 		mode = FrameGrabberMode.STOPPED;
 		totalTime = 0;
 		loopCount = 0;
@@ -94,19 +94,20 @@ public class FrameGrabber implements CameraBridgeViewBase.CvCameraViewListener2 
 	}
 
 	//getter for the result
-	public boolean isResultReady(){
+	public boolean isResultReady() {
 		return resultReady;
 	}
-	public ImageProcessorResult getResult(){
+
+	public ImageProcessorResult getResult() {
 		return result;
 	}
 
-	private void processFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame){
-		if(imageProcessor == null){
+	private void processFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+		if(imageProcessor == null) {
 			return;
 		}
 		//start the loop timer
-		if(mode == FrameGrabberMode.SINGLE){
+		if(mode == FrameGrabberMode.SINGLE) {
 			loopTimer = System.nanoTime();
 		}
 		long frameTime = System.currentTimeMillis();
@@ -143,8 +144,8 @@ public class FrameGrabber implements CameraBridgeViewBase.CvCameraViewListener2 
 	@Override
 	public void onCameraViewStarted(int width, int height) {
 		//create the frame and tmp images
-		frame = new Mat(height, width, CvType.CV_8UC4, new Scalar(0,0,0));
-		blank = new Mat(height, width, CvType.CV_8UC4, new Scalar(0,0,0));
+		frame = new Mat(height, width, CvType.CV_8UC4, new Scalar(0, 0, 0));
+		blank = new Mat(height, width, CvType.CV_8UC4, new Scalar(0, 0, 0));
 		tmp1 = new Mat(height, width, CvType.CV_8UC4);
 		tmp2 = new Mat(width, height, CvType.CV_8UC4);
 	}
@@ -156,22 +157,20 @@ public class FrameGrabber implements CameraBridgeViewBase.CvCameraViewListener2 
 
 	@Override
 	public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-		if(mode == FrameGrabberMode.SINGLE){ //if a single frame was requested
+		if(mode == FrameGrabberMode.SINGLE) { //if a single frame was requested
 			processFrame(inputFrame); //process it
 			stopFrameGrabber(); //and stop grabbing
 			resultReady = true;
-		}
-		else if(mode == FrameGrabberMode.THROWAWAY) { //if throwing away frames
+		} else if(mode == FrameGrabberMode.THROWAWAY) { //if throwing away frames
 			return blank;
-		}
-		else if(mode == FrameGrabberMode.STOPPED) { //if stopped
+		} else if(mode == FrameGrabberMode.STOPPED) { //if stopped
 			//wait for a frame request from the main program
 			//in the meantime hang to avoid grabbing extra frames and wasting battery
 			resultReady = true;
-			while (mode == FrameGrabberMode.STOPPED) {
+			while(mode == FrameGrabberMode.STOPPED) {
 				try {
 					Thread.sleep(5);
-				} catch (InterruptedException e) {
+				} catch(InterruptedException e) {
 					e.printStackTrace();
 				}
 			}

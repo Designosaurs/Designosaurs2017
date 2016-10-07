@@ -18,6 +18,8 @@ import org.opencv.imgproc.Imgproc;
 import java.io.File;
 
 public class ImageUtil {
+
+	//@formatter:off
 	public static final Scalar WHITE        = new Scalar(255, 255, 255);
 	public static final Scalar GRAY         = new Scalar(128, 128, 128);
 	public static final Scalar BLACK        = new Scalar(  0,   0,   0);
@@ -36,15 +38,18 @@ public class ImageUtil {
 	public static final Scalar PINK         = HSVtoRGB(330, 255, 255);
 
 	public static final Scalar BROWN        = HSVtoRGB( 30, 255, 150);
+	//@formatter:on
+
 
 	/**
 	 * Compare 2 Scalars
+	 *
 	 * @param s1 the first Scalar
 	 * @param s2 the second Scalar
 	 * @return whether or not s1 > s2
 	 */
-	public static boolean isScalarGreater(Scalar s1, Scalar s2){
-		for (int i=0; i<s1.val.length; i++) {
+	public static boolean isScalarGreater(Scalar s1, Scalar s2) {
+		for(int i = 0; i < s1.val.length; i++) {
 			if(s1.val[i] <= s2.val[i]) return false;
 		}
 		return true;
@@ -52,12 +57,13 @@ public class ImageUtil {
 
 	/**
 	 * Compare 2 Scalars
+	 *
 	 * @param s1 the first Scalar
 	 * @param s2 the second Scalar
 	 * @return whether or not s1 < s2
 	 */
-	public static boolean isScalarLess(Scalar s1, Scalar s2){
-		for (int i=0; i<s1.val.length; i++) {
+	public static boolean isScalarLess(Scalar s1, Scalar s2) {
+		for(int i = 0; i < s1.val.length; i++) {
 			if(s1.val[i] >= s2.val[i]) return false;
 		}
 		return true;
@@ -65,15 +71,17 @@ public class ImageUtil {
 
 	/**
 	 * Finds the center of an OpenCV Rect
+	 *
 	 * @param r the Rect
 	 * @return an OpenCV Point that is the center
 	 */
 	public static Point centerOfRect(Rect r) {
-		return new Point(r.x+r.width/2, r.y+r.height/2);
+		return new Point(r.x + r.width / 2, r.y + r.height / 2);
 	}
 
 	/**
 	 * Finds the center of an OpenCV RotatedRect
+	 *
 	 * @param r the RotatedRect
 	 * @return an OpenCV Point that is the center
 	 */
@@ -83,6 +91,7 @@ public class ImageUtil {
 
 	/**
 	 * Rescale the hue of an HSV Scalar to be in the range 0 to 179
+	 *
 	 * @param hsv the input HSV Scalar
 	 * @return the rescaled HSV Scalar
 	 */
@@ -98,12 +107,13 @@ public class ImageUtil {
 	/**
 	 * Applys the Core.inRange function to a Mat after accounting for rollover
 	 * on the hsv hue channel.
+	 *
 	 * @param srcHSV source Mat in HSV format
-	 * @param min Scalar that defines the min h, s, and v values
-	 * @param max Scalar that defines the max h, s, and v values
-	 * @param dst the output binary image
+	 * @param min    Scalar that defines the min h, s, and v values
+	 * @param max    Scalar that defines the max h, s, and v values
+	 * @param dst    the output binary image
 	 */
-	public static void hsvInRange(Mat srcHSV, Scalar min, Scalar max, Mat dst){
+	public static void hsvInRange(Mat srcHSV, Scalar min, Scalar max, Mat dst) {
 		//if the max hue is greater than the min hue
 		if(max.val[0] > min.val[0]) {
 			//use inRange once
@@ -127,35 +137,32 @@ public class ImageUtil {
 	/**
 	 * rotates a Mat by any angle. If the angle is 90n, use transpose and/or flip.
 	 * Otherwise, use warpAffine
-	 * @param src Mat to be rotated
-	 * @param dst output Mat
+	 *
+	 * @param src   Mat to be rotated
+	 * @param dst   output Mat
 	 * @param angle angle to rotate by
 	 */
 	public static void rotate(Mat src, Mat dst, int angle) {
 		angle = angle % 360;
-		if (angle == 270 || angle == -90) {
+		if(angle == 270 || angle == -90) {
 			// Rotate clockwise 270 degrees
 			Core.transpose(src, dst);
 			Core.flip(dst, dst, 0);
-		}
-		else if (angle == 180 || angle == -180) {
+		} else if(angle == 180 || angle == -180) {
 			// Rotate clockwise 180 degrees
 			Core.flip(src, dst, -1);
-		}
-		else if (angle == 90 || angle == -270) {
+		} else if(angle == 90 || angle == -270) {
 			// Rotate clockwise 90 degrees
 			Core.transpose(src, dst);
 			Core.flip(dst, dst, 1);
-		}
-		else if (angle == 360 || angle == 0 || angle == -360) {
-			if (src.dataAddr() != dst.dataAddr()) {
+		} else if(angle == 360 || angle == 0 || angle == -360) {
+			if(src.dataAddr() != dst.dataAddr()) {
 				src.copyTo(dst);
 			}
-		}
-		else {
-			Point srcCenter = new Point(src.width()/2, src.height()/2);
+		} else {
+			Point srcCenter = new Point(src.width() / 2, src.height() / 2);
 			Size size = new RotatedRect(srcCenter, src.size(), angle).boundingRect().size();
-			Point center = new Point(size.width/2, size.height/2);
+			Point center = new Point(size.width / 2, size.height / 2);
 
 			Mat rotationMatrix2D = Imgproc.getRotationMatrix2D(center, angle, 1);
 			Imgproc.warpAffine(src, dst, rotationMatrix2D, size);
@@ -164,11 +171,12 @@ public class ImageUtil {
 
 	/**
 	 * Save an image to a file
-	 * @param tag logging tag
-	 * @param mat image to save
+	 *
+	 * @param tag             logging tag
+	 * @param mat             image to save
 	 * @param conversionToBGR openCV code to convert to bgr
-	 * @param fileSuffix end of file name
-	 * @param time start of file name
+	 * @param fileSuffix      end of file name
+	 * @param time            start of file name
 	 * @return whether or not the save was successful
 	 */
 	public static boolean saveImage(String tag, Mat mat, int conversionToBGR, String fileSuffix, long time) {
@@ -178,7 +186,7 @@ public class ImageUtil {
 		File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
 		File file = new File(path, time + "_" + fileSuffix + ".png");
 
-		if (Imgcodecs.imwrite(file.toString(), bgrMat)){
+		if(Imgcodecs.imwrite(file.toString(), bgrMat)) {
 			return true;
 		} else {
 			Log.e(tag, "FAILED writing image to external storage");
@@ -188,39 +196,35 @@ public class ImageUtil {
 
 	/**
 	 * Rotates Point p by angleRadians about Point ref.
-	 * @param ref center of rotation
-	 * @param p point to be rotated
+	 *
+	 * @param ref          center of rotation
+	 * @param p            point to be rotated
 	 * @param angleRadians angle to rotate in radians
 	 * @return a new point which is the rotated p
 	 */
-	public static Point rotatePoint(Point ref, Point p, double angleRadians){
-		return new Point(
-				((p.x - ref.x) * Math.cos(angleRadians)) - ((p.y - ref.y) * Math.sin(angleRadians)) + ref.x,
-				((p.x - ref.x) * Math.sin(angleRadians)) + ((p.y - ref.y) * Math.cos(angleRadians)) + ref.y
-		);
+	public static Point rotatePoint(Point ref, Point p, double angleRadians) {
+		return new Point(((p.x - ref.x) * Math.cos(angleRadians)) - ((p.y - ref.y) * Math.sin(angleRadians)) + ref.x, ((p.x - ref.x) * Math.sin(angleRadians)) + ((p.y - ref.y) * Math.cos(angleRadians)) + ref.y);
 	}
 
 	public static Mat graphColSum(Mat colSum, int height) {
 		int[] white = {128};
 		int[] data = new int[3];
 		int max = 0;
-		for(int x=0; x<colSum.width(); x++){
+		for(int x = 0; x < colSum.width(); x++) {
 			colSum.get(0, x, data);
-			if (data[0] > max) {
+			if(data[0] > max) {
 				max = data[0];
 			}
 		}
 		Mat graph = new Mat(colSum.rows(), height, CvType.CV_8UC1);
-		for(int x=0; x<colSum.width(); x++){
+		for(int x = 0; x < colSum.width(); x++) {
 			colSum.get(0, x, data);
 			int y = 0;
-			if (max > 0) {
+			if(max > 0) {
 				y = data[0] * height / max;
 			}
-			graph.put(y,
-					x,
-					white);
-			if (data[0] > max) {
+			graph.put(y, x, white);
+			if(data[0] > max) {
 				max = data[0];
 			}
 		}
@@ -229,6 +233,7 @@ public class ImageUtil {
 
 	/**
 	 * Converts colorspace from HSV to RGB
+	 *
 	 * @param hsv OpenCV HSV Scalar (Note: H goes from 0 to 179)
 	 * @return OpenCV RGB Scalar
 	 */
@@ -238,6 +243,7 @@ public class ImageUtil {
 
 	/**
 	 * Converts colorspace from HSV to RGB
+	 *
 	 * @param h HSV hue (0 to 360)
 	 * @param s HSV saturation (0 to 255)
 	 * @param v HSV value (0 to 255)
@@ -247,13 +253,13 @@ public class ImageUtil {
 		double r, g, b;
 		int i;
 		double f, p, q, t;
-		h /= 60;			// sector 0 to 5
+		h /= 60;            // sector 0 to 5
 		i = (int) h;
-		f = h - i;			// factorial part of h
-		p = v * ( 1 - s );
-		q = v * ( 1 - s * f );
-		t = v * ( 1 - s * ( 1 - f ) );
-		switch( i ) {
+		f = h - i;            // factorial part of h
+		p = v * (1 - s);
+		q = v * (1 - s * f);
+		t = v * (1 - s * (1 - f));
+		switch(i) {
 			case 0:
 				r = v;
 				g = t;
@@ -279,7 +285,7 @@ public class ImageUtil {
 				g = p;
 				b = v;
 				break;
-			default:		// case 5:
+			default:        // case 5:
 				r = v;
 				g = p;
 				b = q;

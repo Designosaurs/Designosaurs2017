@@ -18,7 +18,7 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 	@Override
 	public ImageProcessorResult<BeaconColorResult> process(long startTime, Mat rgbaFrame, boolean saveImages) {
 		//save the image in the Pictures directory
-		if (saveImages) {
+		if(saveImages) {
 			ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, "0_camera", startTime);
 		}
 		//convert image to hsv
@@ -39,14 +39,14 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 		List<Scalar> hsvMax = new ArrayList<>();
 
 		//hsvMin.add(new Scalar(  H,   S,   V  ));
-		hsvMin.add(new Scalar(300/2,  50, 150)); //red min
-		hsvMax.add(new Scalar( 60/2, 255, 255)); //red max
+		hsvMin.add(new Scalar(300 / 2, 50, 150)); //red min
+		hsvMax.add(new Scalar(60 / 2, 255, 255)); //red max
 
-		hsvMin.add(new Scalar( 60/2,  50, 150)); //green min
-		hsvMax.add(new Scalar(180/2, 255, 255)); //green max
+		hsvMin.add(new Scalar(60 / 2, 50, 150)); //green min
+		hsvMax.add(new Scalar(180 / 2, 255, 255)); //green max
 
-		hsvMin.add(new Scalar(180/2,  50, 150)); //blue min
-		hsvMax.add(new Scalar(300/2, 255, 255)); //blue max
+		hsvMin.add(new Scalar(180 / 2, 50, 150)); //blue min
+		hsvMax.add(new Scalar(300 / 2, 255, 255)); //blue max
 
 		// make a list of channels that are blank (used for combining binary images)
 		List<Mat> rgbaChannels = new ArrayList<>();
@@ -55,11 +55,11 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 		// much of a color is present on that side (in units of scaled pixels that pass the
 		// color filter). This variable keeps track of the mass
 		// of the color that ended up having the most "color mass" on each side.
-		double [] maxMass = { Double.MIN_VALUE, Double.MIN_VALUE }; //max mass for left and right
+		double[] maxMass = {Double.MIN_VALUE, Double.MIN_VALUE}; //max mass for left and right
 		// This next variable keeps track of the color on each side that had the max "color mass"
 		// with  0=red  1=green  2=blue  3=UNKNOWN
 		// So both sides start as unknown:
-		int[] maxMassIndex = { 3, 3}; // index of the max mass
+		int[] maxMassIndex = {3, 3}; // index of the max mass
 
 		// We are about to loop over the filters and compute the "color mass" for each color
 		// on each side of the image.
@@ -71,7 +71,7 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 		int[] data = new int[3]; //used to read the colSum
 
 		//loop through the filters
-		for(int i=0; i<3; i++) {
+		for(int i = 0; i < 3; i++) {
 			//apply HSV thresholds
 			maskedImage = new Mat();
 			ImageUtil.hsvInRange(hsv, hsvMin.get(i), hsvMax.get(i), maskedImage);
@@ -84,18 +84,18 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 
 			//loop through left and right to calculate mass
 			int start = 0;
-			int end = hsv.width()/2;
-			for(int j=0; j<2; j++){
+			int end = hsv.width() / 2;
+			for(int j = 0; j < 2; j++) {
 				//calculate the mass
 				mass = 0;
-				for(int x=start; x<end; x++){
+				for(int x = start; x < end; x++) {
 					colSum.get(0, x, data);
 					mass += data[0];
 				}
 				mass /= hsv.size().area(); //scale the mass by the image size
 
 				//if the mass found is greater than the max for this side
-				if(mass >= MIN_MASS && mass > maxMass[j]){
+				if(mass >= MIN_MASS && mass > maxMass[j]) {
 					//this mass is the new max for this side
 					maxMass[j] = mass;
 					//and this index is the new maxIndex for this side
@@ -118,17 +118,15 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 		BeaconColorResult.BeaconColor right = beaconColors[maxMassIndex[1]];
 
 		//draw the color result bars
-		int barHeight = hsv.height()/30;
-		Imgproc.rectangle(rgbaFrame, new Point(0, 0), new Point(hsv.width()/2, barHeight), left.color, barHeight);
-		Imgproc.rectangle(rgbaFrame, new Point(hsv.width()/2, 0), new Point(hsv.width(), barHeight), right.color, barHeight);
+		int barHeight = hsv.height() / 30;
+		Imgproc.rectangle(rgbaFrame, new Point(0, 0), new Point(hsv.width() / 2, barHeight), left.color, barHeight);
+		Imgproc.rectangle(rgbaFrame, new Point(hsv.width() / 2, 0), new Point(hsv.width(), barHeight), right.color, barHeight);
 
-		if (saveImages) {
+		if(saveImages) {
 			ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, "1_binary", startTime);
 		}
 
 		//construct and return the result
-		return new ImageProcessorResult<>(startTime, rgbaFrame,
-				new BeaconColorResult(left, right)
-		);
+		return new ImageProcessorResult<>(startTime, rgbaFrame, new BeaconColorResult(left, right));
 	}
 }

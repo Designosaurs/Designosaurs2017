@@ -22,10 +22,10 @@ public class BeaconColorResult {
 	}
 
 	public enum BeaconColor {
-		RED     (ImageUtil.RED),
-		GREEN   (ImageUtil.GREEN),
-		BLUE    (ImageUtil.BLUE),
-		UNKNOWN (ImageUtil.BLACK);
+		RED(ImageUtil.RED),
+		GREEN(ImageUtil.GREEN),
+		BLUE(ImageUtil.BLUE),
+		UNKNOWN(ImageUtil.BLACK);
 
 
 		public final Scalar color;
@@ -36,7 +36,7 @@ public class BeaconColorResult {
 	}
 
 	@Override
-	public String toString(){
+	public String toString() {
 		return leftColor + ", " + rightColor;
 	}
 }
