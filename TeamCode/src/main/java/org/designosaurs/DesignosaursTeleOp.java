@@ -3,7 +3,7 @@ package org.designosaurs;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-@TeleOp(name="Designosaurs Drive", group="TeleOp")
+@TeleOp(name = "Designosaurs Drive", group = "TeleOp")
 public class DesignosaursTeleOp extends LinearOpMode {
 	private DesignosaursHardware robot = new DesignosaursHardware();
 
@@ -27,7 +27,7 @@ public class DesignosaursTeleOp extends LinearOpMode {
 			robot.leftMotor.setPower(left);
 			robot.rightMotor.setPower(right);
 
-			telemetry.addData("left",  "Left pwr: %.2f", left);
+			telemetry.addData("left", "Left pwr: %.2f", left);
 			telemetry.addData("right", "Right pwr: %.2f", right);
 			telemetry.update();
 

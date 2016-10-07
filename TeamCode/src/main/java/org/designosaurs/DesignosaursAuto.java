@@ -10,7 +10,7 @@ import ftc.vision.BeaconColorResult;
 import ftc.vision.FrameGrabber;
 import ftc.vision.ImageProcessorResult;
 
-@TeleOp(name="Designosaurs Autonomous", group="Auto")
+@TeleOp(name = "Designosaurs Autonomous", group = "Auto")
 public class DesignosaursAuto extends LinearOpMode {
 	private DesignosaursHardware robot = new DesignosaursHardware();
 
@@ -43,7 +43,7 @@ public class DesignosaursAuto extends LinearOpMode {
 			FrameGrabber frameGrabber = FtcRobotControllerActivity.frameGrabber; //Get the frameGrabber
 
 			frameGrabber.grabSingleFrame(); //Tell it to grab a frame
-			while (!frameGrabber.isResultReady()) { //Wait for the result
+			while(!frameGrabber.isResultReady()) { //Wait for the result
 				Thread.sleep(5); //sleep for 5 milliseconds
 			}
 
