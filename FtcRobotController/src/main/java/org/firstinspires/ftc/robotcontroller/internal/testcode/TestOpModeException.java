@@ -41,13 +41,12 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
  */
 @Autonomous(name = "Test OpMode Exception", group = "Tests")
 @Disabled
-public class TestOpModeException extends LinearOpMode
-    {
-    @Override public void runOpMode() throws InterruptedException
-        {
-        waitForStart();
+public class TestOpModeException extends LinearOpMode {
+	@Override
+	public void runOpMode() throws InterruptedException {
+		waitForStart();
 
-        Thread.sleep(5000);
-        throw new RuntimeException("this is a runtime exception");
-        }
-    }
+		Thread.sleep(5000);
+		throw new RuntimeException("this is a runtime exception");
+	}
+}

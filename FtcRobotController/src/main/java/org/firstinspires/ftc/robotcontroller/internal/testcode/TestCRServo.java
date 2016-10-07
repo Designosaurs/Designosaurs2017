@@ -40,24 +40,22 @@ import com.qualcomm.robotcore.hardware.CRServo;
 /**
  * A simple test of a continuous rotation servo
  */
-@Autonomous(name="Test CR Servo", group ="Tests")
+@Autonomous(name = "Test CR Servo", group = "Tests")
 @Disabled
-public class TestCRServo extends LinearOpMode
-    {
-    @Override
-    public void runOpMode() throws InterruptedException
-        {
-        CRServo servo = this.hardwareMap.crservo.get("crservo");
+public class TestCRServo extends LinearOpMode {
+	@Override
+	public void runOpMode() throws InterruptedException {
+		CRServo servo = this.hardwareMap.crservo.get("crservo");
 
-        waitForStart();
+		waitForStart();
 
-        servo.setPower(1.0);
-        Thread.sleep(4000);
+		servo.setPower(1.0);
+		Thread.sleep(4000);
 
-        servo.setPower(0.0);
-        Thread.sleep(1000);
+		servo.setPower(0.0);
+		Thread.sleep(1000);
 
-        servo.setPower(-1.0);
-        Thread.sleep(4000);
-        }
-    }
+		servo.setPower(-1.0);
+		Thread.sleep(4000);
+	}
+}

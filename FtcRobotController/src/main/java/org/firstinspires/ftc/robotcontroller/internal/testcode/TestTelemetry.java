@@ -47,93 +47,89 @@ import java.util.Locale;
  */
 @Autonomous(name = "Test Telemetry", group = "Tests")
 @Disabled
-public class TestTelemetry extends LinearOpMode
-    {
-    @Override public void runOpMode() throws InterruptedException
-        {
-        waitForStart();
+public class TestTelemetry extends LinearOpMode {
+	@Override
+	public void runOpMode() throws InterruptedException {
+		waitForStart();
 
-        testNonAutoClear();
-        testLogDashboardInteraction();
+		testNonAutoClear();
+		testLogDashboardInteraction();
 
-        while (opModeIsActive())
-            {
-            idle();
-            }
-        }
+		while(opModeIsActive()) {
+			idle();
+		}
+	}
 
-    void testNonAutoClear() throws InterruptedException
-        {
-        ((TelemetryInternal)telemetry).resetTelemetryForOpMode();
+	void testNonAutoClear() throws InterruptedException {
+		((TelemetryInternal) telemetry).resetTelemetryForOpMode();
 
-        telemetry.setAutoClear(false);
+		telemetry.setAutoClear(false);
 
-        Telemetry.Item counting = telemetry.addData("counting", 1).setRetained(true);
-        telemetry.addData("unretained", "red");
-        telemetry.addData("retained", new Func<String>() {
-            @Override public String value() {
-                return String.format(Locale.getDefault(), "%dms", System.currentTimeMillis());
-            }});
-        telemetry.addData("unretained", "green");
-        telemetry.update();
-        delay();
+		Telemetry.Item counting = telemetry.addData("counting", 1).setRetained(true);
+		telemetry.addData("unretained", "red");
+		telemetry.addData("retained", new Func<String>() {
+			@Override
+			public String value() {
+				return String.format(Locale.getDefault(), "%dms", System.currentTimeMillis());
+			}
+		});
+		telemetry.addData("unretained", "green");
+		telemetry.update();
+		delay();
 
-        counting.setValue(2);
-        telemetry.update();
-        delay();
+		counting.setValue(2);
+		telemetry.update();
+		delay();
 
-        counting.setValue(3);
-        telemetry.update();
-        delay();
+		counting.setValue(3);
+		telemetry.update();
+		delay();
 
-        telemetry.clear();
-        delay();
+		telemetry.clear();
+		delay();
 
-        counting.setValue(4);
-        telemetry.update();
-        delay();
-        }
+		counting.setValue(4);
+		telemetry.update();
+		delay();
+	}
 
-    void testLogDashboardInteraction() throws InterruptedException
-        {
-        ((TelemetryInternal)telemetry).resetTelemetryForOpMode();
+	void testLogDashboardInteraction() throws InterruptedException {
+		((TelemetryInternal) telemetry).resetTelemetryForOpMode();
 
-        int count = 0;
+		int count = 0;
 
-        telemetry.log().add("one");
-        delay();
+		telemetry.log().add("one");
+		delay();
 
-        telemetry.addData("count", count++);
-        delay();
+		telemetry.addData("count", count++);
+		delay();
 
-        telemetry.addData("count", count++);
-        delay();
+		telemetry.addData("count", count++);
+		delay();
 
-        telemetry.log().add("two");
-        delay();
+		telemetry.log().add("two");
+		delay();
 
-        telemetry.update();
-        delay();
+		telemetry.update();
+		delay();
 
-        telemetry.log().add("three (should see count 0 & 1)");
-        delay();
+		telemetry.log().add("three (should see count 0 & 1)");
+		delay();
 
-        telemetry.addData("count", count++);
-        delay();
+		telemetry.addData("count", count++);
+		delay();
 
-        telemetry.log().add("four (should see count 0 & 1)");
-        delay();
+		telemetry.log().add("four (should see count 0 & 1)");
+		delay();
 
-        telemetry.update();
-        delay();
+		telemetry.update();
+		delay();
 
-        telemetry.log().add("five (should see count 2)");
-        delay();
-        }
+		telemetry.log().add("five (should see count 2)");
+		delay();
+	}
 
-    void delay() throws InterruptedException
-        {
-        Thread.sleep(2000);
-        }
-
-    }
+	void delay() throws InterruptedException {
+		Thread.sleep(2000);
+	}
+}

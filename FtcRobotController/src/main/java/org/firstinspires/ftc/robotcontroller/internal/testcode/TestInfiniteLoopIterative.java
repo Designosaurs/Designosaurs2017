@@ -43,21 +43,22 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 @Disabled
 public class TestInfiniteLoopIterative extends OpMode {
 
-    @Override public void init()
-        {
-        // Nothing to do
-        }
+	@Override
+	public void init() {
+		// Nothing to do
+	}
 
-    @Override public void loop() {
+	@Override
+	public void loop() {
 
-        telemetry.addData("message", "starting infinite loop...");
-        updateTelemetry(telemetry);
+		telemetry.addData("message", "starting infinite loop...");
+		updateTelemetry(telemetry);
 
-        // Do nothing, forever
-        for (int count = 0; ; count++) {
-            telemetry.addData("count", count);
-            updateTelemetry(telemetry);
-            Thread.yield();
-        }
-    }
+		// Do nothing, forever
+		for(int count = 0; ; count++) {
+			telemetry.addData("count", count);
+			updateTelemetry(telemetry);
+			Thread.yield();
+		}
+	}
 }

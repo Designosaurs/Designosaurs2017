@@ -44,53 +44,48 @@ import com.qualcomm.robotcore.util.RobotLog;
  */
 @TeleOp(name = "TestMotorModeSwitch", group = "Tests")
 @Disabled
-public class TestMotorModeSwitch extends LinearOpMode
-    {
-    DcMotor motor;
+public class TestMotorModeSwitch extends LinearOpMode {
+	DcMotor motor;
 
-    public void runOpMode() throws InterruptedException
-        {
-        motor = hardwareMap.dcMotor.get("v1.5 motor");
+	public void runOpMode() throws InterruptedException {
+		motor = hardwareMap.dcMotor.get("v1.5 motor");
 
-        DcMotor.RunMode[] modes = new DcMotor.RunMode[]
-            {
-            DcMotor.RunMode.RUN_WITHOUT_ENCODER,        // 1
-            DcMotor.RunMode.RUN_USING_ENCODER,          // 2
-            DcMotor.RunMode.STOP_AND_RESET_ENCODER,     // 3
+		DcMotor.RunMode[] modes = new DcMotor.RunMode[] {DcMotor.RunMode.RUN_WITHOUT_ENCODER,        // 1
+				DcMotor.RunMode.RUN_USING_ENCODER,          // 2
+				DcMotor.RunMode.STOP_AND_RESET_ENCODER,     // 3
 
-            DcMotor.RunMode.RUN_WITHOUT_ENCODER,        // 1
-            DcMotor.RunMode.STOP_AND_RESET_ENCODER,     // 3
-            DcMotor.RunMode.RUN_USING_ENCODER,          // 2
+				DcMotor.RunMode.RUN_WITHOUT_ENCODER,        // 1
+				DcMotor.RunMode.STOP_AND_RESET_ENCODER,     // 3
+				DcMotor.RunMode.RUN_USING_ENCODER,          // 2
 
-            DcMotor.RunMode.RUN_USING_ENCODER,          // 2
-            DcMotor.RunMode.RUN_WITHOUT_ENCODER,        // 1
-            DcMotor.RunMode.STOP_AND_RESET_ENCODER,     // 3
+				DcMotor.RunMode.RUN_USING_ENCODER,          // 2
+				DcMotor.RunMode.RUN_WITHOUT_ENCODER,        // 1
+				DcMotor.RunMode.STOP_AND_RESET_ENCODER,     // 3
 
-            DcMotor.RunMode.RUN_USING_ENCODER,          // 2
-            DcMotor.RunMode.STOP_AND_RESET_ENCODER,     // 3
-            DcMotor.RunMode.RUN_WITHOUT_ENCODER,        // 1
+				DcMotor.RunMode.RUN_USING_ENCODER,          // 2
+				DcMotor.RunMode.STOP_AND_RESET_ENCODER,     // 3
+				DcMotor.RunMode.RUN_WITHOUT_ENCODER,        // 1
 
-            DcMotor.RunMode.STOP_AND_RESET_ENCODER,     // 3
-            DcMotor.RunMode.RUN_WITHOUT_ENCODER,        // 1
-            DcMotor.RunMode.RUN_USING_ENCODER,          // 2
+				DcMotor.RunMode.STOP_AND_RESET_ENCODER,     // 3
+				DcMotor.RunMode.RUN_WITHOUT_ENCODER,        // 1
+				DcMotor.RunMode.RUN_USING_ENCODER,          // 2
 
-            DcMotor.RunMode.STOP_AND_RESET_ENCODER,     // 3
-            DcMotor.RunMode.RUN_USING_ENCODER,          // 2
-            DcMotor.RunMode.RUN_WITHOUT_ENCODER,        // 1
-            };
+				DcMotor.RunMode.STOP_AND_RESET_ENCODER,     // 3
+				DcMotor.RunMode.RUN_USING_ENCODER,          // 2
+				DcMotor.RunMode.RUN_WITHOUT_ENCODER,        // 1
+		};
 
-        waitForStart();
+		waitForStart();
 
-        int count = 0;
-        while (opModeIsActive())
-            {
-            DcMotor.RunMode mode = modes[count % modes.length];
+		int count = 0;
+		while(opModeIsActive()) {
+			DcMotor.RunMode mode = modes[count % modes.length];
 
-            motor.setMode(mode);
-            telemetry.addData("count", "%d", count++);
-            telemetry.addData("mode", "%s", motor.getMode());
-            telemetry.update();
-            idle();
-            }
-        }
-    }
+			motor.setMode(mode);
+			telemetry.addData("count", "%d", count++);
+			telemetry.addData("mode", "%s", motor.getMode());
+			telemetry.update();
+			idle();
+		}
+	}
+}

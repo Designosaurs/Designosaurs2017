@@ -40,51 +40,47 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 /**
  * An opmode that simply tests the brake and float behavior.
  */
-@Autonomous(name="Test Brake/Float", group ="Tests")
+@Autonomous(name = "Test Brake/Float", group = "Tests")
 @Disabled
-public class TestBrakeFloat extends LinearOpMode
-    {
-    DcMotor motorLeft;
-    DcMotor motorRight;
+public class TestBrakeFloat extends LinearOpMode {
+	DcMotor motorLeft;
+	DcMotor motorRight;
 
-    @Override
-    public void runOpMode() throws InterruptedException
-        {
-        motorLeft = this.hardwareMap.dcMotor.get("motorLeft");
-        motorRight = this.hardwareMap.dcMotor.get("motorRight");
+	@Override
+	public void runOpMode() throws InterruptedException {
+		motorLeft = this.hardwareMap.dcMotor.get("motorLeft");
+		motorRight = this.hardwareMap.dcMotor.get("motorRight");
 
-        motorLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motorRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		motorLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		motorRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        waitForStart();
+		waitForStart();
 
-        int msInterval = 1500;
-        double power = 0.75;
-        while (opModeIsActive())
-            {
-            motorLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            motorRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+		int msInterval = 1500;
+		double power = 0.75;
+		while(opModeIsActive()) {
+			motorLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+			motorRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-            motorLeft.setPower(power);
-            motorRight.setPower(power);
-            Thread.sleep(msInterval);
+			motorLeft.setPower(power);
+			motorRight.setPower(power);
+			Thread.sleep(msInterval);
 
-            motorLeft.setPower(0.0);
-            motorRight.setPower(0.0);
-            Thread.sleep(msInterval);
+			motorLeft.setPower(0.0);
+			motorRight.setPower(0.0);
+			Thread.sleep(msInterval);
 
 
-            motorLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-            motorRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+			motorLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+			motorRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
-            motorLeft.setPower(power);
-            motorRight.setPower(power);
-            Thread.sleep(msInterval);
+			motorLeft.setPower(power);
+			motorRight.setPower(power);
+			Thread.sleep(msInterval);
 
-            motorLeft.setPower(0.0);
-            motorRight.setPower(0.0);
-            Thread.sleep(msInterval);
-            }
-        }
-
-    }
+			motorLeft.setPower(0.0);
+			motorRight.setPower(0.0);
+			Thread.sleep(msInterval);
+		}
+	}
+}

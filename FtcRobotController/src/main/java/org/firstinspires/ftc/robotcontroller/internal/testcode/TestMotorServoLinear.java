@@ -44,50 +44,45 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  */
 @Autonomous(name = "TestMotorServo", group = "Tests")
 @Disabled
-public class TestMotorServoLinear extends LinearOpMode
-    {
-    @Override
-    public void runOpMode() throws InterruptedException
-        {
-        DcMotor motor = this.hardwareMap.dcMotor.get("motorRight");
-        Servo servo = this.hardwareMap.servo.get("servo");
+public class TestMotorServoLinear extends LinearOpMode {
+	@Override
+	public void runOpMode() throws InterruptedException {
+		DcMotor motor = this.hardwareMap.dcMotor.get("motorRight");
+		Servo servo = this.hardwareMap.servo.get("servo");
 
-        waitForStart();
+		waitForStart();
 
-        double servoPosition = 0;
-        servo.setPosition(servoPosition);
+		double servoPosition = 0;
+		servo.setPosition(servoPosition);
 
-        motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        ElapsedTime elapsedTime = new ElapsedTime();
-        int spinCount = 0;
+		ElapsedTime elapsedTime = new ElapsedTime();
+		int spinCount = 0;
 
-        while (this.opModeIsActive())
-            {
-            servoPosition += 1. / 256.;
-            if (servoPosition >= 1)
-                servoPosition = 0;
-            servo.setPosition(servoPosition);
+		while(this.opModeIsActive()) {
+			servoPosition += 1. / 256.;
+			if(servoPosition >= 1) servoPosition = 0;
+			servo.setPosition(servoPosition);
 
-            motor.setPower(0.15);
+			motor.setPower(0.15);
 
-            spinCount++;
-            double ms = elapsedTime.milliseconds();
-            telemetry.addData("position", format(servoPosition));
-            telemetry.addData("#spin",    format(spinCount));
-            telemetry.addData("ms/spin",  format(ms / spinCount));
-            this.updateTelemetry(telemetry);
-            }
+			spinCount++;
+			double ms = elapsedTime.milliseconds();
+			telemetry.addData("position", format(servoPosition));
+			telemetry.addData("#spin", format(spinCount));
+			telemetry.addData("ms/spin", format(ms / spinCount));
+			this.updateTelemetry(telemetry);
+		}
 
-        motor.setPower(0);
-        }
+		motor.setPower(0);
+	}
 
-    static String format(double d)
-        {
-        return String.format("%.3f", d);
-        }
-    static String format(int i)
-        {
-        return String.format("%d", i);
-        }
-    }
+	static String format(double d) {
+		return String.format("%.3f", d);
+	}
+
+	static String format(int i) {
+		return String.format("%d", i);
+	}
+}
