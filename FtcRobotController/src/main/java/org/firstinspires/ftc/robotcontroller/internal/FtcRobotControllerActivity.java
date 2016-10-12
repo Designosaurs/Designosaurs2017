@@ -116,6 +116,7 @@ public class FtcRobotControllerActivity extends Activity {
 
 	// Loads camera view of OpenCV for us to use. This lets us see using OpenCV
 	private CameraBridgeViewBase cameraBridgeViewBase;
+	private View customView;
 
 	//manages getting one frame at a time
 	public static FrameGrabber frameGrabber = null;
@@ -125,6 +126,8 @@ public class FtcRobotControllerActivity extends Activity {
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
 		cameraBridgeViewBase = (JavaCameraView) findViewById(R.id.show_camera_activity_java_surface_view);
+		customView = findViewById(R.id.frameLayout);
+
 		frameGrabber = new FrameGrabber(cameraBridgeViewBase, FRAME_WIDTH_REQUEST, FRAME_HEIGHT_REQUEST);
 		frameGrabber.setImageProcessor(new BeaconProcessor());
 		frameGrabber.setSaveImages(true);
@@ -534,6 +537,9 @@ public class FtcRobotControllerActivity extends Activity {
 				programmingModeIntent.putExtra(LaunchActivityConstantsList.PROGRAMMING_MODE_ACTIVITY_NETWORK_TYPE, networkType);
 				startActivity(programmingModeIntent);
 			}
+			return true;
+		} else if(id == R.id.camera_debug_mode) {
+			customView.setVisibility((customView.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
 			return true;
 		} else if(id == R.id.action_inspection_mode) {
 			Intent inspectionModeIntent = new Intent(RcInspectionActivity.rcLaunchIntent);

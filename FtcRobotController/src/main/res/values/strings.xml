@@ -42,6 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
   <!-- Menu -->
   <string name="inspection_mode_menu_item">Self Inspect</string>
+  <string name="camera_debug_mode_menu_item">Debug Mode</string>
   <string name="programming_mode_menu_item">Programming Mode</string>
   <string name="blocks_menu_item">Blocks</string>
   <string name="settings_menu_item">Settings</string>
