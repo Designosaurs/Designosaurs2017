@@ -17,6 +17,7 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 
 	@Override
 	public ImageProcessorResult<BeaconColorResult> process(long startTime, Mat rgbaFrame, boolean saveImages) {
+		Mat rgbaFrameBak = rgbaFrame.clone();
 		//save the image in the Pictures directory
 		if(saveImages) {
 			ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, "0_camera", startTime);
@@ -126,7 +127,27 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 			ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, "1_binary", startTime);
 		}
 
+		Mat output = rgbaFrame.clone();
+
+		overlayImage(rgbaFrameBak, rgbaFrame, output);
+
 		//construct and return the result
-		return new ImageProcessorResult<>(startTime, rgbaFrame, new BeaconColorResult(left, right));
+		return new ImageProcessorResult<>(startTime, output, new BeaconColorResult(left, right));
+	}
+
+	public void overlayImage(Mat background, Mat foreground, Mat output) {
+		background.copyTo(output);
+		Mat dst = new Mat();
+		Imgproc.resize(foreground, dst, background.size());
+		for(int y = 0; y < background.rows(); ++y) {
+			for(int x = 0; x < background.cols(); ++x) {
+				double info[] = dst.get(y, x);
+
+				if(info[0] == 255 || info[1] == 255 || info[2] == 255) {
+					double infof[] = dst.get(y, x);
+					output.put(y, x, infof);
+				}
+			}
+		}
 	}
 }

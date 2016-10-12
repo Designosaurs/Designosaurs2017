@@ -37,6 +37,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
@@ -305,6 +306,8 @@ public class FtcRobotControllerActivity extends Activity {
 		eventLoop = null;
 
 		setContentView(R.layout.activity_ftc_controller);
+
+		this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
 		////////////// START VISION PROCESSING CODE //////////////
 		myOnCreate();
