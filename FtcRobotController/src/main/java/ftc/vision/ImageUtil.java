@@ -37,7 +37,7 @@ public class ImageUtil {
 	public static final Scalar MAGENTA      = HSVtoRGB(300, 255, 255);
 	public static final Scalar PINK         = HSVtoRGB(330, 255, 255);
 
-	public static final Scalar BROWN        = HSVtoRGB( 30, 255, 150);
+	public static final Scalar BROWN        = HSVtoRGB(30, 255, 150);
 	//@formatter:on
 
 

@@ -27,10 +27,6 @@ public class ImageProcessorResult<ResultType> {
 		return endTime - startTime;
 	}
 
-	public boolean isResultNull() {
-		return result == null;
-	}
-
 	public ResultType getResult() {
 		return result;
 	}
@@ -41,10 +37,6 @@ public class ImageProcessorResult<ResultType> {
 
 	@Override
 	public String toString() {
-		if(isResultNull()) {
-			return "null";
-		} else {
-			return result.toString();
-		}
+		return result == null ? "null" : result.toString();
 	}
 }
