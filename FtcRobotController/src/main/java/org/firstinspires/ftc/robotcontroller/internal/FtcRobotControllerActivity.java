@@ -73,6 +73,7 @@ import com.qualcomm.ftccommon.LaunchActivityConstantsList;
 import com.qualcomm.ftccommon.ProgrammingModeController;
 import com.qualcomm.ftccommon.Restarter;
 
+import org.designosaurs.SimpleController;
 import org.firstinspires.ftc.ftccommon.external.SoundPlayingRobotMonitor;
 
 import com.qualcomm.ftccommon.UpdateUI;
@@ -102,6 +103,7 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -111,8 +113,8 @@ import ftc.vision.FrameGrabber;
 public class FtcRobotControllerActivity extends Activity {
 	////////////// START VISION PROCESSING CODE //////////////
 
-	static final int FRAME_WIDTH_REQUEST = 176;
-	static final int FRAME_HEIGHT_REQUEST = 144;
+	static final int FRAME_WIDTH_REQUEST = 480;
+	static final int FRAME_HEIGHT_REQUEST = 360;
 
 	// Loads camera view of OpenCV for us to use. This lets us see using OpenCV
 	private CameraBridgeViewBase cameraBridgeViewBase;
@@ -315,6 +317,14 @@ public class FtcRobotControllerActivity extends Activity {
 		////////////// START VISION PROCESSING CODE //////////////
 		myOnCreate();
 		////////////// END VISION PROCESSING CODE //////////////
+
+		/////////////// HERE LIES THE SUPER COOL WEBSERVER //////////////
+		try {
+			new SimpleController();
+		} catch(IOException e) {
+			Log.e("SimpleController", "The web server has fallen!");
+		}
+		////////////// THE COOL WEBSERVER IS ABOVE //////////////
 
 		context = this;
 		utility = new Utility(this);
