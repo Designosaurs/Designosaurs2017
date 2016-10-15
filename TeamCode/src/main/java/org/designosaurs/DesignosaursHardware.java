@@ -24,16 +24,16 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * As the claw servo approaches 0, the claw opens up (drops the game element).
  */
 public class DesignosaursHardware {
-	/* Public OpMode members. */
 	public DcMotor leftMotor = null;
 	public DcMotor rightMotor = null;
+	public DcMotor buttonPusher = null;
 
-	/* Local OpMode members. */ HardwareMap hwMap = null;
+	public static final int COUNTS_PER_REVOLUTION = 1120;
+
+	private HardwareMap hwMap = null;
 	private ElapsedTime period = new ElapsedTime();
 
-	/* Constructor */
-	public DesignosaursHardware() {
-	}
+	public DesignosaursHardware() {}
 
 	/* Initialize standard Hardware interfaces */
 	public void init(HardwareMap ahwMap) {
@@ -46,8 +46,14 @@ public class DesignosaursHardware {
 		leftMotor.setPower(0);
 		rightMotor.setPower(0);
 
-		leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-		rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+		rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+		buttonPusher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+	}
+
+	public void setDrivePower(double power) {
+		leftMotor.setPower(power);
+		rightMotor.setPower(power);
 	}
 
 	public void waitForTick(long periodMs) throws InterruptedException {

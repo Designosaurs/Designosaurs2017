@@ -2,24 +2,14 @@ package org.designosaurs;
 
 import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
-import org.firstinspires.ftc.robotcore.external.matrices.MatrixF;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * This OpMode illustrates the basics of using the Vuforia localizer to determine
@@ -54,14 +44,18 @@ import java.util.List;
 
 @Autonomous(name = "Designosaurs Autonomous", group = "Auto")
 public class DesignosaursAuto extends LinearOpMode {
+	private DesignosaursHardware robot = new DesignosaursHardware();
+
 	public final String VUFORIA_LICENCE_KEY = "ATwI0oz/////AAAAGe9HyiYVEU6pmTFAb65tOfUrioTxlZtITHRLN1h3wllaw67kJsUOHwPVDsCN0vxiKy/9Qi9NnjpkVfUnn0gwIHyKJgTYkG7+dCaJtFJlY94qa1YPCy0y4rwhVQFkDkcaCiNoiS7ZSU5KLeIABF4Gvz9qYwJJtwxWGp4fbjyu+arTOUw160+Fg5XMjoftS8FAQPx4wF33sVdGw+CYX0fHdwQzOyN0PpIwBQ9xvb8e1c76FoHF0YUZyV/q0XeR97nRj1TfnesPc+v7Z72SEDCXAAdVVS6L9u/mVAxq4zTaXsdGcVsqHeaouoGmQ/1Ey/YYShqHaRZXWwC4GsgaxO9tCkWNH+hTjFZA2pgvKVl5HmLR";
 
-	float mmPerInch = 25.4f;
-	float mmBotWidth = 18 * mmPerInch;
-	float mmFTCFieldWidth = (12*12 - 2) * mmPerInch;
+	private float mmPerInch = 25.4f;
+	private float mmBotWidth = 18 * mmPerInch;
+	private float mmFTCFieldWidth = (12*12 - 2) * mmPerInch;
 
 	@Override
 	public void runOpMode() throws InterruptedException {
+		robot.init(hardwareMap);
+
 		VuforiaLocalizer.Parameters params = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
 		params.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
 		params.vuforiaLicenseKey = VUFORIA_LICENCE_KEY;
@@ -76,14 +70,21 @@ public class DesignosaursAuto extends LinearOpMode {
 
 		waitForStart();
 
+		robot.buttonPusher.setTargetPosition((int) (DesignosaursHardware.COUNTS_PER_REVOLUTION * 1.5));
+		robot.setDrivePower(0.5);
+
 		beacons.activate();
 
 		while(opModeIsActive()) {
-			for(VuforiaTrackable track : beacons) {
-				OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) track.getListener()).getPose();
+			for(VuforiaTrackable image : beacons) {
+				OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) image.getListener()).getPose();
 
-				if(pose != null)
-					telemetry.addData(track.getName(), pose.getTranslation().length());
+				if(pose != null) {
+					telemetry.addData(image.getName(), pose.getTranslation().length());
+					telemetry.update();
+
+					robot.setDrivePower(0);
+				}
 			}
 		}
 	}

@@ -247,12 +247,12 @@ public class FtcRobotControllerActivity extends Activity {
 	protected FtcEventLoop eventLoop;
 	protected Queue<UsbDevice> receivedUsbAttachmentNotifications;
 
-	protected class RobotRestarter implements Restarter {
+	public SimpleController simpleController;
 
+	protected class RobotRestarter implements Restarter {
 		public void requestRestart() {
 			requestRobotRestart();
 		}
-
 	}
 
 	protected ServiceConnection connection = new ServiceConnection() {
@@ -320,9 +320,10 @@ public class FtcRobotControllerActivity extends Activity {
 
 		/////////////// HERE LIES THE SUPER COOL WEBSERVER //////////////
 		try {
-			new SimpleController();
+			simpleController = new SimpleController();
 		} catch(IOException e) {
 			Log.e("SimpleController", "The web server has fallen!");
+			Log.e("SimpleController", e.getMessage());
 		}
 		////////////// THE COOL WEBSERVER IS ABOVE //////////////
 
