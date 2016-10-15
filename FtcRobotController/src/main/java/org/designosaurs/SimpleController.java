@@ -17,17 +17,24 @@ import fi.iki.elonen.NanoHTTPD;
 public class SimpleController extends NanoHTTPD {
     private static final int PORT = 9001;
     private String imageData = "";
+    public static boolean enabled = true;
 
     public SimpleController() throws IOException {
         super(PORT);
+
+        if(!enabled)
+            return;
+
         start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
         System.out.println("\nSimple Web Controller Interface started on port " + PORT + "\n");
     }
 
     public void setImage(Bitmap bmp) {
+        Bitmap scaled = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth() / 2, bmp.getHeight() / 2);
+
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
-        bmp.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+        scaled.compress(Bitmap.CompressFormat.JPEG, 80, byteArrayOutputStream);
         byte[] byteArray = byteArrayOutputStream.toByteArray();
 
         imageData = Base64.encodeToString(byteArray, Base64.DEFAULT);
@@ -55,7 +62,7 @@ public class SimpleController extends NanoHTTPD {
         if(parms.get("username") == null) {
             msg += "<form action='?' method='get'>\n  <p>Your name: <input type='text' name='username'></p>\n" + "</form>\n";
 
-            msg += "<img src=\"data:image/png;base64," + imageData + "\"/>";
+            msg += "<img src=\"data:image/jpeg;base64," + imageData + "\"/>";
         } else {
             msg += "<p>Hello, " + parms.get("username") + "!</p>";
         }
