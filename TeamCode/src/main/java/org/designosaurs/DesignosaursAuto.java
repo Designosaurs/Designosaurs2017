@@ -1,15 +1,25 @@
 package org.designosaurs;
 
+import android.graphics.Bitmap;
+import android.graphics.Matrix;
+
 import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.vuforia.Matrix34F;
+import com.vuforia.Tool;
+import com.vuforia.Vec2F;
+import com.vuforia.Vec3F;
 
-import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
+import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+
+import java.util.Arrays;
 
 /**
  * This OpMode illustrates the basics of using the Vuforia localizer to determine
@@ -52,6 +62,19 @@ public class DesignosaursAuto extends LinearOpMode {
 	private float mmBotWidth = 18 * mmPerInch;
 	private float mmFTCFieldWidth = (12*12 - 2) * mmPerInch;
 
+	enum Side {
+		upperLeft(0),
+		upperRight(1),
+		lowerLeft(2),
+		lowerRight(3);
+
+		final int value;
+
+		Side(int value) {
+			this.value = value;
+		}
+	}
+
 	@Override
 	public void runOpMode() throws InterruptedException {
 		robot.init(hardwareMap);
@@ -60,7 +83,7 @@ public class DesignosaursAuto extends LinearOpMode {
 		params.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
 		params.vuforiaLicenseKey = VUFORIA_LICENCE_KEY;
 
-		VuforiaLocalizer vuforia = ClassFactory.createVuforiaLocalizer(params);
+		VuforiaLocalizerImplSubclass vuforia = new VuforiaLocalizerImplSubclass(params);
 
 		VuforiaTrackables beacons = vuforia.loadTrackablesFromAsset("FTC_2016-17");
 		beacons.get(0).setName("Wheels");
@@ -70,22 +93,69 @@ public class DesignosaursAuto extends LinearOpMode {
 
 		waitForStart();
 
-		robot.buttonPusher.setTargetPosition((int) (DesignosaursHardware.COUNTS_PER_REVOLUTION * 1.5));
-		robot.setDrivePower(0.5);
+		//robot.buttonPusher.setTargetPosition((int) (DesignosaursHardware.COUNTS_PER_REVOLUTION * 1.5));
+//		robot.setDrivePower(0.5);
 
 		beacons.activate();
 
 		while(opModeIsActive()) {
-			for(VuforiaTrackable image : beacons) {
-				OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) image.getListener()).getPose();
+			for(VuforiaTrackable beac : beacons) {
+				OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) beac.getListener()).getRawPose();
 
 				if(pose != null) {
-					telemetry.addData(image.getName(), pose.getTranslation().length());
-					telemetry.update();
+//					robot.setDrivePower(0);
 
-					robot.setDrivePower(0);
+					Matrix34F rawPose = new Matrix34F();
+					float[] poseData = Arrays.copyOfRange(pose.transposed().getData(), 0, 12);
+					rawPose.setData(poseData);
+
+					Vec2F upperLeft = Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(-127, 92, 0));//254.000000 184
+					Vec2F upperRight = Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(127, 92, 0));
+					Vec2F lowerLeft = Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(-127, -92, 0));
+					Vec2F lowerRight = Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(127, -92, 0));
+
+					float[][] data = new float[4][];//Its y, x D:
+
+					data[Side.upperLeft.value] = swapValues(upperLeft.getData());//[0] x pos in video output
+					data[Side.upperRight.value] = swapValues(upperRight.getData());
+					data[Side.lowerLeft.value] = swapValues(lowerLeft.getData());
+					data[Side.lowerRight.value] = swapValues(lowerRight.getData());
+
+					Vector2 start = new Vector2(Math.min(data[Side.upperRight.value][0], data[Side.upperLeft.value][0]), Math.min(data[Side.upperLeft.value][1], data[Side.lowerLeft.value][1]));
+					Vector2 end = new Vector2(Math.max(data[Side.upperRight.value][0], data[Side.lowerLeft.value][0]), Math.max(data[Side.upperLeft.value][1], data[Side.lowerLeft.value][1]));
+					String debugData = "Start(" + start.x + "," + start.y + "),";
+					debugData += "End(" + end.x + "," + end.y + ")";
+
+					VectorF translation = pose.getTranslation();
+
+					telemetry.addData(beac.getName() + "-Translation", translation);
+
+					double degreesToTurn = Math.toDegrees(Math.atan2(translation.get(1), translation.get(2)));
+
+					telemetry.addData(beac.getName() + "-Degrees", degreesToTurn);
+
+					if(vuforia.rgb != null) {
+						Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
+						bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
+						bm = RotateBitmap(bm, 90);
+
+						Bitmap resizedbitmap = Bitmap.createBitmap(bm, Math.max(0, start.x), Math.max(0, start.y), Math.abs(start.x - end.x), Math.abs(start.y - end.y));
+
+						FtcRobotControllerActivity.simpleController.setImage(bm);
+					}
 				}
 			}
+			telemetry.update();
 		}
+	}
+
+	static Bitmap RotateBitmap(Bitmap source, float angle) {
+		Matrix matrix = new Matrix();
+		matrix.postRotate(angle);
+		return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
+	}
+
+	static float[] swapValues(float[] values) {
+		return new float[] { values[1], values[0] };
 	}
 }

@@ -24,12 +24,14 @@ public class DesignosaursTeleOp extends LinearOpMode {
 			left = -gamepad1.left_stick_y;
 			right = -gamepad1.right_stick_y;
 
-			robot.leftMotor.setPower(left);
-			robot.rightMotor.setPower(right);
+			if(DesignosaursHardware.handwareEnabled) {
+				robot.leftMotor.setPower(left);
+				robot.rightMotor.setPower(right);
 
-			telemetry.addData("left", "Left pwr: %.2f", left);
-			telemetry.addData("right", "Right pwr: %.2f", right);
-			telemetry.update();
+				telemetry.addData("left", "Left pwr: %.2f", left);
+				telemetry.addData("right", "Right pwr: %.2f", right);
+				telemetry.update();
+			}
 
 			robot.waitForTick(40);
 			idle();

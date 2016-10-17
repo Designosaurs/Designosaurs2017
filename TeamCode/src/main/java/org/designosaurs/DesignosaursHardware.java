@@ -24,6 +24,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * As the claw servo approaches 0, the claw opens up (drops the game element).
  */
 public class DesignosaursHardware {
+	public static final boolean handwareEnabled = true;
+
 	public DcMotor leftMotor = null;
 	public DcMotor rightMotor = null;
 	public DcMotor buttonPusher = null;
@@ -39,21 +41,25 @@ public class DesignosaursHardware {
 	public void init(HardwareMap ahwMap) {
 		hwMap = ahwMap;
 
-		leftMotor = hwMap.dcMotor.get("left");
-		rightMotor = hwMap.dcMotor.get("right");
-		leftMotor.setDirection(DcMotor.Direction.REVERSE);
+		if(handwareEnabled) {
+			leftMotor = hwMap.dcMotor.get("left");
+			rightMotor = hwMap.dcMotor.get("right");
+			leftMotor.setDirection(DcMotor.Direction.REVERSE);
 
-		leftMotor.setPower(0);
-		rightMotor.setPower(0);
+			leftMotor.setPower(0);
+			rightMotor.setPower(0);
 
-		leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-		rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-		buttonPusher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+			leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+			rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+			//buttonPusher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+		}
 	}
 
 	public void setDrivePower(double power) {
-		leftMotor.setPower(power);
-		rightMotor.setPower(power);
+		if(handwareEnabled) {
+			leftMotor.setPower(power);
+			rightMotor.setPower(power);
+		}
 	}
 
 	public void waitForTick(long periodMs) throws InterruptedException {
