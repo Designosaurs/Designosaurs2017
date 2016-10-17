@@ -102,8 +102,11 @@ import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -111,6 +114,8 @@ import ftc.vision.BeaconProcessor;
 import ftc.vision.FrameGrabber;
 
 public class FtcRobotControllerActivity extends Activity {
+	public static FtcRobotControllerActivity instance;
+
 	////////////// START VISION PROCESSING CODE //////////////
 
 	static final int FRAME_WIDTH_REQUEST = 480;
@@ -247,7 +252,7 @@ public class FtcRobotControllerActivity extends Activity {
 	protected FtcEventLoop eventLoop;
 	protected Queue<UsbDevice> receivedUsbAttachmentNotifications;
 
-	public SimpleController simpleController;
+	public static SimpleController simpleController;
 
 	protected class RobotRestarter implements Restarter {
 		public void requestRestart() {
@@ -320,13 +325,25 @@ public class FtcRobotControllerActivity extends Activity {
 
 		/////////////// HERE LIES THE SUPER COOL WEBSERVER //////////////
 		try {
+			InputStream is = getResources().getAssets().open("web/page.html");//classLoader.getResource("raw/page.html").openStream();
+			BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+
+			StringBuilder builder = new StringBuilder();
+			String strline;
+			while((strline = br.readLine()) != null) {
+				builder.append(strline);
+			}
+
 			simpleController = new SimpleController();
+
+			SimpleController.page = builder.toString();
 		} catch(IOException e) {
 			Log.e("SimpleController", "The web server has fallen!");
 			Log.e("SimpleController", e.getMessage());
 		}
 		////////////// THE COOL WEBSERVER IS ABOVE //////////////
 
+		instance = this;
 		context = this;
 		utility = new Utility(this);
 		appUtil.setThisApp(new PeerAppRobotController(context));
