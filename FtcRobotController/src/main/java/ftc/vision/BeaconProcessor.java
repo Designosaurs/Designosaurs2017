@@ -1,6 +1,5 @@
 package ftc.vision;
 
-
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -129,25 +128,9 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 
 		Mat output = rgbaFrame.clone();
 
-		overlayImage(rgbaFrameBak, rgbaFrame, output);
+		ImageUtil.overlayImage(rgbaFrameBak, rgbaFrame, output);
 
 		//construct and return the result
 		return new ImageProcessorResult<>(startTime, output, new BeaconColorResult(left, right));
-	}
-
-	public void overlayImage(Mat background, Mat foreground, Mat output) {
-		background.copyTo(output);
-		Mat dst = new Mat();
-		Imgproc.resize(foreground, dst, background.size());
-		for(int y = 0; y < background.rows(); ++y) {
-			for(int x = 0; x < background.cols(); ++x) {
-				double info[] = dst.get(y, x);
-
-				if(info[0] == 255 || info[1] == 255 || info[2] == 255) {
-					double infof[] = dst.get(y, x);
-					output.put(y, x, infof);
-				}
-			}
-		}
 	}
 }

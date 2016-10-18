@@ -1,6 +1,8 @@
 package ftc.vision;
 
 
+import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.os.Environment;
 import android.util.Log;
 
@@ -39,7 +41,6 @@ public class ImageUtil {
 
 	public static final Scalar BROWN        = HSVtoRGB(30, 255, 150);
 	//@formatter:on
-
 
 	/**
 	 * Compare 2 Scalars
@@ -105,7 +106,7 @@ public class ImageUtil {
 	}
 
 	/**
-	 * Applys the Core.inRange function to a Mat after accounting for rollover
+	 * Applies the Core.inRange function to a Mat after accounting for rollover
 	 * on the hsv hue channel.
 	 *
 	 * @param srcHSV source Mat in HSV format
@@ -167,6 +168,12 @@ public class ImageUtil {
 			Mat rotationMatrix2D = Imgproc.getRotationMatrix2D(center, angle, 1);
 			Imgproc.warpAffine(src, dst, rotationMatrix2D, size);
 		}
+	}
+
+	public static Bitmap rotate(Bitmap source, float angle) {
+		Matrix matrix = new Matrix();
+		matrix.postRotate(angle);
+		return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
 	}
 
 	/**
@@ -292,5 +299,21 @@ public class ImageUtil {
 				break;
 		}
 		return new Scalar(r, g, b);
+	}
+
+	public static void overlayImage(Mat background, Mat foreground, Mat output) {
+		background.copyTo(output);
+		Mat dst = new Mat();
+		Imgproc.resize(foreground, dst, background.size());
+		for(int y = 0; y < background.rows(); ++y) {
+			for(int x = 0; x < background.cols(); ++x) {
+				double info[] = dst.get(y, x);
+
+				if(info[0] == 255 || info[1] == 255 || info[2] == 255) {
+					double infof[] = dst.get(y, x);
+					output.put(y, x, infof);
+				}
+			}
+		}
 	}
 }

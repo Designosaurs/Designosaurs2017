@@ -27,7 +27,6 @@ public class BeaconColorResult {
 		BLUE(ImageUtil.BLUE),
 		UNKNOWN(ImageUtil.BLACK);
 
-
 		public final Scalar color;
 
 		BeaconColor(Scalar color) {
