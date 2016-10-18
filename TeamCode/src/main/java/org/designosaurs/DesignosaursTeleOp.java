@@ -24,7 +24,7 @@ public class DesignosaursTeleOp extends LinearOpMode {
 			left = -gamepad1.left_stick_y;
 			right = -gamepad1.right_stick_y;
 
-			if(DesignosaursHardware.hardwareEnabled) {
+			if(DesignosaursHardware.handwareEnabled) {
 				robot.leftMotor.setPower(left);
 				robot.rightMotor.setPower(right);
 

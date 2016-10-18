@@ -2,6 +2,7 @@ package org.designosaurs;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 /**
@@ -23,7 +24,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * As the claw servo approaches 0, the claw opens up (drops the game element).
  */
 public class DesignosaursHardware {
-	public static final boolean hardwareEnabled = false;
+	public static final boolean handwareEnabled = true;
 
 	public DcMotor leftMotor = null;
 	public DcMotor rightMotor = null;
@@ -37,10 +38,10 @@ public class DesignosaursHardware {
 	public DesignosaursHardware() {}
 
 	/* Initialize standard Hardware interfaces */
-	public void init(HardwareMap hwMap) {
-		this.hwMap = hwMap;
+	public void init(HardwareMap ahwMap) {
+		hwMap = ahwMap;
 
-		if(hardwareEnabled) {
+		if(handwareEnabled) {
 			leftMotor = hwMap.dcMotor.get("left");
 			rightMotor = hwMap.dcMotor.get("right");
 			leftMotor.setDirection(DcMotor.Direction.REVERSE);
@@ -50,12 +51,12 @@ public class DesignosaursHardware {
 
 			leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 			rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-//			buttonPusher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+			//buttonPusher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 		}
 	}
 
 	public void setDrivePower(double power) {
-		if(hardwareEnabled) {
+		if(handwareEnabled) {
 			leftMotor.setPower(power);
 			rightMotor.setPower(power);
 		}

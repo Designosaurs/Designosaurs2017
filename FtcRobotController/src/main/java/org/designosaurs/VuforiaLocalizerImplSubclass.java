@@ -13,21 +13,20 @@ import org.firstinspires.ftc.robotcore.internal.VuforiaLocalizerImpl;
 public class VuforiaLocalizerImplSubclass extends VuforiaLocalizerImpl {
 
 	public Image rgb;
-
+	
 	class CloseableFrame extends Frame {
 		public CloseableFrame(Frame other) { // clone the frame so we can be useful beyond callback
 			super(other);
 		}
-
 		public void close() {
 			super.delete();
 		}
 	}
 
+
 	public class VuforiaCallbackSubclass extends VuforiaLocalizerImpl.VuforiaCallback {
 
-		@Override
-		public synchronized void Vuforia_onUpdate(State state) {
+		@Override public synchronized void Vuforia_onUpdate(State state) {
 			super.Vuforia_onUpdate(state);
 			// We wish to accomplish two things: (a) get a clone of the Frame so we can use
 			// it beyond the callback, and (b) get a variant that will allow us to proactively
@@ -37,21 +36,17 @@ public class VuforiaLocalizerImplSubclass extends VuforiaLocalizerImpl {
 			// how the Frame is obtained in the first place.
 			CloseableFrame frame = new CloseableFrame(state.getFrame());
 //			RobotLog.vv(TAG, "received Vuforia frame#=%d", frame.getIndex());
-
+			
 			long num = frame.getNumImages();
 
 			for(int i = 0; i < num; i++) {
 				if(frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {
 					rgb = frame.getImage(i);
 				} else {
-					rgb = frame.getImage(i);
-					int type = rgb.getFormat();
-					type = type;
-//					new Exception("Unknown image format" + frame.getImage(i).getFormat()).printStackTrace();
-//					RobotLog.a("VuforiaLocalizerImplSubclass", "Unknown image format" + frame.getImage(i).getFormat());
+//					throw new Exception("Unknown image format" + frame.getImage(i).getFormat());
 				}
 			}
-
+			
 			frame.close();
 		}
 	}
@@ -69,10 +64,9 @@ public class VuforiaLocalizerImplSubclass extends VuforiaLocalizerImpl {
 	}
 
 	public void clearGlSurface() {
-		if(this.glSurfaceParent != null) {
+		if (this.glSurfaceParent != null) {
 			appUtil.synchronousRunOnUiThread(new Runnable() {
-				@Override
-				public void run() {
+				@Override public void run() {
 					glSurfaceParent.removeAllViews();
 					glSurfaceParent.getOverlay().clear();
 					glSurface = null;
