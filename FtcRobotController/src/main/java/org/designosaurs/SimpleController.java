@@ -58,10 +58,8 @@ public class SimpleController extends NanoHTTPD {
 	}
 
     public void setImage(Mat data) {
-        Bitmap bmp = null;
-
         try {
-            bmp = Bitmap.createBitmap(data.cols(), data.rows(), Bitmap.Config.ARGB_8888);
+			Bitmap bmp = Bitmap.createBitmap(data.cols(), data.rows(), Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(data, bmp);
 
             data.release();
@@ -74,21 +72,21 @@ public class SimpleController extends NanoHTTPD {
 
     @Override
     public Response serve(IHTTPSession session) {
-        String msg = "<html><head><style>#camera { position: absolute; top: 80px; left: 0 }\n.point { position: absolute; width: 8px; height: 8px; border-radius: 4px; background-color: blue }</style></head><body><h1>Hello server</h1>\n";
+        String msg = "<html><head><style>#camera { position: absolute; top: 200px; left: 0 }\n.point { position: absolute; width: 8px; height: 8px; border-radius: 4px; background-color: blue }</style></head><body><h1>Hello server</h1>\n";
         Map<String, String> parms = session.getParms();
         if(parms.get("username") == null) {
             msg += "<form action='?' method='get'>\n  <p>Your name: <input type='text' name='username'></p>\n" + "</form>\n";
 
-            msg += "<img src=\"data:image/jpeg;base64," + imageData + "\" style=\"position:absolute; top: 200px; left: 800px\"/>";
+            msg += "<img src=\"data:image/jpeg;base64," + imageData + "\" style=\"position:absolute; top: 0px; left: 0px\"/>";
             msg += "<img src=\"data:image/jpeg;base64," + imageData2 + "\" id=\"camera\"/>";
 			for(Vector2 pos : coords)
-				msg += "<div class=\"point\" style=\"left: " + (pos.x) + "px; top: " + (80 + pos.y) + "px\"> </div>";
+				msg += "<div class=\"point\" style=\"left: " + (pos.x) + "px; top: " + (200 + pos.y) + "px\"> </div>";
 			for(Vector2 pos : coords2)
-				msg += "<div class=\"point\" style=\"background-color: red; left: " + (pos.x) + "px; top: " + (80 + pos.y) + "px\"> </div>";
+				msg += "<div class=\"point\" style=\"background-color: red; left: " + (pos.x) + "px; top: " + (200 + pos.y) + "px\"> </div>";
 
-            msg += "<p>" + text + "<p/>";
+            msg += "<p style=\"position:absolute; top: 0px; left: 320px\">" + text + "<p/>";
         } else {
-            msg += "<p>Hello, " + parms.get("username") + "!</p>";
+            msg += "<p >Hello, " + parms.get("username") + "!</p>";
         }
 
         return newFixedLengthResponse(msg + "</body></html>\n");
