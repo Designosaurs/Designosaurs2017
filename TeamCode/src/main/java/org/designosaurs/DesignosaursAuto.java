@@ -41,6 +41,16 @@ public class DesignosaursAuto extends LinearOpMode {
 	private float mmBotWidth = 18 * mmPerInch;
 	private float mmFTCFieldWidth = (12 * 12 - 2) * mmPerInch;
 
+	private static final double DRIVE_POWER = 0.75;
+	private static final double BUTTON_PUSHER_POWER = 0.75;
+	private static final double BUTTON_PUSHER_MOVEMENT_THRESHOLD = 50;
+	private static final int BEACON_ALIGNMENT_TOLERANCE = 5;
+
+
+	private byte autonomousState = 0;
+	private double lastButtonPusherPosition = 0;
+	// 0 = moving, 1 =
+
 	@Override
 	public void runOpMode() throws InterruptedException {
 		robot.init(hardwareMap);
@@ -59,17 +69,33 @@ public class DesignosaursAuto extends LinearOpMode {
 
 		waitForStart();
 
-		//robot.buttonPusher.setTargetPosition((int) (DesignosaursHardware.COUNTS_PER_REVOLUTION * 1.5));
-//		robot.setDrivePower(0.5);
-
 		beacons.activate();
 
 		while(opModeIsActive()) {
+			switch(last) {
+				case 0:
+					if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
+						robot.setDrivePower(0);
+						robot.buttonPusher.setPower(BUTTON_PUSHER_POWER);
+
+						last = 1;
+					} else {
+						if(getRelativePosition() > 0) {
+							robot.setDrivePower(DRIVE_POWER);
+						} else {
+							robot.setDrivePower(-DRIVE_POWER);
+						}
+					}
+				break;
+				case 1:
+
+				break;
+			}
+
 			for(VuforiaTrackable beac : beacons) {
 				OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) beac.getListener()).getRawPose();
 
 				if(pose != null) {
-//					robot.setDrivePower(0);
 
 					Matrix34F rawPose = new Matrix34F();
 					float[] poseData = Arrays.copyOfRange(pose.transposed().getData(), 0, 12);
@@ -177,7 +203,7 @@ public class DesignosaursAuto extends LinearOpMode {
 		}
 	}
 
-	static Bitmap RotateBitmap(Bitmap source, float angle) {
+	private static Bitmap RotateBitmap(Bitmap source, float angle) {
 		Matrix matrix = new Matrix();
 		matrix.postRotate(angle);
 		return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
