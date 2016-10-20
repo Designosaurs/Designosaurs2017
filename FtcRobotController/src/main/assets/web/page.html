@@ -1,9 +1,35 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Raleway:300">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.2/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animsition/4.0.2/css/animsition.min.css">
+    <link rel="stylesheet" href="http://cdn.williamtdr.com/ftc/style.css">
+
+    <title>Designosaurs Debug Console</title>
+</head>
 <body>
+<div class="animsition container zoom-in-sm" data-animsition-in-duration="750" style="margin-top: 15px">
+    <div class="header">
+        Status
+    </div>
+    <div id="status">
+        <div id="targetOpmode"></div>
+    </div>
+    <div class="header">
+        Camera View
+    </div>
+    <div id="targetCameraView">
+        <img src="http://cdnjs.cloudflare.com/ajax/libs/semantic-ui/0.16.1/images/loader-large.gif?zoom=2">
+    </div>
+    <div class="header">
+        Console
+    </div>
+</div>
 
-<h2 style="color:red;">I am red</h2>
-<h2 style="color:blue;">I am blue</h2>
-
+<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animsition/4.0.2/js/animsition.min.js"></script>
+<script src="http://cdn.williamtdr.com/ftc/script.js"></script>
 </body>
 </html>

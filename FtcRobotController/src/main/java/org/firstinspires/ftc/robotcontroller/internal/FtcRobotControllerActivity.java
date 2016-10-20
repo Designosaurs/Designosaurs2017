@@ -325,18 +325,17 @@ public class FtcRobotControllerActivity extends Activity {
 
 		/////////////// HERE LIES THE SUPER COOL WEBSERVER //////////////
 		try {
-			InputStream is = getResources().getAssets().open("web/page.html");//classLoader.getResource("raw/page.html").openStream();
-			BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+			InputStream is = getResources().getAssets().open("web/page.html");
+			BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+			StringBuilder out = new StringBuilder();
+			String line;
 
-			StringBuilder builder = new StringBuilder();
-			String strline;
-			while((strline = br.readLine()) != null) {
-				builder.append(strline);
-			}
+			while((line = reader.readLine()) != null)
+				out.append(line);
 
 			simpleController = new SimpleController();
 
-			SimpleController.page = builder.toString();
+			SimpleController.page = out.toString();
 		} catch(IOException e) {
 			Log.e("SimpleController", "The web server has fallen!");
 			Log.e("SimpleController", e.getMessage());
