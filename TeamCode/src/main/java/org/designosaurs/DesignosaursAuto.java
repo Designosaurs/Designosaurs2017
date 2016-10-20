@@ -80,16 +80,11 @@ public class DesignosaursAuto extends LinearOpMode {
 					Vector2 lowerLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(-100, 142, 0)));//-127, -92, 0
 					Vector2 lowerRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(100, 142, 0)));//127, -92, 0
 
-					Vector2 start = new Vector2(Math.min(upperLeft.x, lowerLeft.x), Math.min(upperLeft.y, upperRight.y));
-					Vector2 end = new Vector2(Math.max(lowerRight.x, upperRight.x), Math.max(lowerLeft.y, lowerRight.y));
 					String debugData = "";
 					debugData += "upperLeft" + upperLeft.toString();
 					debugData += "upperRight" + upperRight.toString();
 					debugData += "lowerLeft" + lowerLeft.toString();
 					debugData += "lowerRight" + lowerRight.toString();
-
-					debugData += "Start(" + start.x + "," + start.y + "),";
-					debugData += "End(" + end.x + "," + end.y + ")";
 
 					VectorF translation = pose.getTranslation();
 
@@ -102,14 +97,23 @@ public class DesignosaursAuto extends LinearOpMode {
 					if(vuforia.rgb != null) {
 						Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
 						bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
+
+						Vector2 start = new Vector2(Math.max(0, Math.min(upperLeft.X, lowerLeft.X)),
+								Math.min(bm.getHeight()-1,Math.max(0, Math.min(upperLeft.Y, upperRight.Y))));
+						Vector2 end = new Vector2(Math.max(0, Math.max(lowerRight.X, upperRight.X)),
+								Math.min(bm.getHeight()-1,Math.max(0, Math.max(lowerLeft.Y, lowerRight.Y))));
+
+						debugData += "Start(" + start.X + "," + start.Y + "),";
+						debugData += "End(" + end.X + "," + end.Y + ")";
+
 //						bm = RotateBitmap(bm, 90);
-						int startX = Math.max(0, start.x);
-						int startY = Math.max(0, start.y);
-						int endX = Math.max(0, Math.abs(start.x - end.x));
-						int endY = Math.max(0, Math.abs(start.y - end.y));
+//						int startX = Math.max(0, start.X);
+//						int startY = Math.min(bm.getHeight(), Math.max(0, start.Y));
+//						int endX = Math.min(0, Math.min(bm.getWidth(), Math.abs(start.X - end.X)));
+//						int endY = Math.min(0, Math.min(bm.getHeight(), Math.abs(start.Y - end.Y)));
 
 //						try {
-							Bitmap a = Bitmap.createBitmap(bm, startX, startY, endX, endY);
+							Bitmap a = Bitmap.createBitmap(bm, start.X, start.Y, end.X, end.Y);
 
 							Bitmap resizedbitmap = resize(a, a.getWidth() / 2, a.getHeight() / 2);
 							resizedbitmap = RotateBitmap(resizedbitmap, 90);

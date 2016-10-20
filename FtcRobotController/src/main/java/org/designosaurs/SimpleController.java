@@ -80,9 +80,9 @@ public class SimpleController extends NanoHTTPD {
             msg += "<img src=\"data:image/jpeg;base64," + imageData + "\" style=\"position:absolute; top: 0px; left: 0px\"/>";
             msg += "<img src=\"data:image/jpeg;base64," + imageData2 + "\" id=\"camera\"/>";
 			for(Vector2 pos : coords)
-				msg += "<div class=\"point\" style=\"left: " + (pos.x) + "px; top: " + (200 + pos.y) + "px\"> </div>";
+				msg += "<div class=\"point\" style=\"left: " + (pos.X) + "px; top: " + (200 + pos.Y) + "px\"> </div>";
 			for(Vector2 pos : coords2)
-				msg += "<div class=\"point\" style=\"background-color: red; left: " + (pos.x) + "px; top: " + (200 + pos.y) + "px\"> </div>";
+				msg += "<div class=\"point\" style=\"background-color: red; left: " + (pos.X) + "px; top: " + (200 + pos.Y) + "px\"> </div>";
 
             msg += "<p style=\"position:absolute; top: 0px; left: 320px\">" + text + "<p/>";
         } else {
