@@ -14,25 +14,32 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import fi.iki.elonen.NanoHTTPD;
+import fi.iki.elonen.NanoWSD;
 
 public class SimpleController extends NanoHTTPD {
-    private static final int PORT = 9001;
     private String imageData = "";
     private String imageData2 = "";
-    public String text = "";
 	public static ArrayList<Vector2> coords = new ArrayList<>();
 	public static ArrayList<Vector2> coords2 = new ArrayList<>();
 	public static String page;
+
+    /* Configuration */
+    private static final int httpPort = 9001;
+    private static final int wsPort = 9002;
     public static boolean enabled = true;
+    public static boolean debug = true;
 
     public SimpleController() throws IOException {
-        super(PORT);
+        super(httpPort);
 
         if(!enabled)
             return;
 
+        NanoWSD ws = new WebsocketServer(wsPort, debug);
+        ws.start();
+
         start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
-        System.out.println("\nSimple Web Controller Interface started on port " + PORT + "\n");
+        System.out.println("\nSimple Web Controller Interface started on port " + httpPort + "\n");
     }
 
     public void setImage(Bitmap bmp) {
