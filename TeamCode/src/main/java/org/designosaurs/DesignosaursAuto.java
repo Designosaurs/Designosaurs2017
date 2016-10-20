@@ -138,7 +138,7 @@ public class DesignosaursAuto extends LinearOpMode {
 //							e.printStackTrace();
 //						}
 
-						FtcRobotControllerActivity.simpleController.text = debugData;
+						//FtcRobotControllerActivity.simpleController.text = debugData;
 						SimpleController.coords.clear();
 						SimpleController.coords2.clear();
 
