@@ -35,6 +35,8 @@ public class DesignosaursAuto extends LinearOpMode {
 
 	private final boolean FAKE_TAPE = true;
 
+	private int centeredPos = Integer.MAX_VALUE;
+
 	public final String VUFORIA_LICENCE_KEY = "ATwI0oz/////AAAAGe9HyiYVEU6pmTFAb65tOfUrioTxlZtITHRLN1h3wllaw67kJsUOHwPVDsCN0vxiKy/9Qi9NnjpkVfUnn0gwIHyKJgTYkG7+dCaJtFJlY94qa1YPCy0y4rwhVQFkDkcaCiNoiS7ZSU5KLeIABF4Gvz9qYwJJtwxWGp4fbjyu+arTOUw160+Fg5XMjoftS8FAQPx4wF33sVdGw+CYX0fHdwQzOyN0PpIwBQ9xvb8e1c76FoHF0YUZyV/q0XeR97nRj1TfnesPc+v7Z72SEDCXAAdVVS6L9u/mVAxq4zTaXsdGcVsqHeaouoGmQ/1Ey/YYShqHaRZXWwC4GsgaxO9tCkWNH+hTjFZA2pgvKVl5HmLR";
 
 	private float mmPerInch = 25.4f;
@@ -65,6 +67,7 @@ public class DesignosaursAuto extends LinearOpMode {
 		beacons.activate();
 
 		while(opModeIsActive()) {
+			boolean ran = false;
 			for(VuforiaTrackable beac : beacons) {
 				OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) beac.getListener()).getRawPose();
 
@@ -74,6 +77,9 @@ public class DesignosaursAuto extends LinearOpMode {
 					Matrix34F rawPose = new Matrix34F();
 					float[] poseData = Arrays.copyOfRange(pose.transposed().getData(), 0, 12);
 					rawPose.setData(poseData);
+
+					Vector2 center = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(0, 0, 0)));
+
 
 					Vector2 upperLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(-100, 260, 0)));//-127, 92, 0
 					Vector2 upperRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(100, 260, 0)));//127, 92, 0
@@ -97,6 +103,9 @@ public class DesignosaursAuto extends LinearOpMode {
 					if(vuforia.rgb != null) {
 						Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
 						bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
+
+						centeredPos = center.X;
+						ran = true;
 
 						Vector2 start = new Vector2(Math.max(0, Math.min(upperLeft.X, lowerLeft.X)),
 								Math.min(bm.getHeight()-1,Math.max(0, Math.min(upperLeft.Y, upperRight.Y))));
@@ -156,8 +165,14 @@ public class DesignosaursAuto extends LinearOpMode {
 					}
 				}
 			}
+			if(!ran)
+				centeredPos = Integer.MAX_VALUE;
 			telemetry.update();
 		}
+	}
+
+	public int getRelativePositon() {
+		return centeredPos;
 	}
 
 	private static Bitmap resize(Bitmap image, int maxWidth, int maxHeight) {
