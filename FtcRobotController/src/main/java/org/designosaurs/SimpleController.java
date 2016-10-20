@@ -79,6 +79,24 @@ public class SimpleController extends NanoHTTPD {
 
     @Override
     public Response serve(IHTTPSession session) {
+//        String msg = "<html><head><style>#camera { position: absolute; top: 200px; left: 0 }\n.point { position: absolute; width: 8px; height: 8px; border-radius: 4px; background-color: blue }</style></head><body><h1>Hello server</h1>\n";
+//        Map<String, String> parms = session.getParms();
+//        if(parms.get("username") == null) {
+//            msg += "<form action='?' method='get'>\n  <p>Your name: <input type='text' name='username'></p>\n" + "</form>\n";
+//
+//            msg += "<img src=\"data:image/jpeg;base64," + imageData + "\" style=\"position:absolute; top: 0px; left: 0px\"/>";
+//            msg += "<img src=\"data:image/jpeg;base64," + imageData2 + "\" id=\"camera\"/>";
+//			for(Vector2 pos : coords)
+//				msg += "<div class=\"point\" style=\"left: " + (pos.X) + "px; top: " + (200 + pos.Y) + "px\"> </div>";
+//			for(Vector2 pos : coords2)
+//				msg += "<div class=\"point\" style=\"background-color: red; left: " + (pos.X) + "px; top: " + (200 + pos.Y) + "px\"> </div>";
+//
+//            msg += "<p style=\"position:absolute; top: 0px; left: 320px\">" + text + "<p/>";
+//        } else {
+//            msg += "<p >Hello, " + parms.get("username") + "!</p>";
+//        }
+//
+//        return newFixedLengthResponse(msg + "</body></html>\n");
 		return newFixedLengthResponse(page);
     }
 }
