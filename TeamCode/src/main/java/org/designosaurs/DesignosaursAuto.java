@@ -23,6 +23,7 @@ import org.opencv.core.Mat;
 
 import java.util.Arrays;
 
+import ftc.vision.BeaconColorResult;
 import ftc.vision.BeaconProcessor;
 import ftc.vision.ImageProcessorResult;
 
@@ -43,26 +44,32 @@ public class DesignosaursAuto extends LinearOpMode {
 	private static final double BUTTON_PUSHER_MOVEMENT_THRESHOLD = 10;
 	private static final double BUTTON_PUSHER_TARGET_IDLE_POSITION = 3 * DesignosaursHardware.COUNTS_PER_REVOLUTION;
 	private static final double BUTTON_PUSHER_THRESHOLD = DesignosaursHardware.COUNTS_PER_REVOLUTION / 10;
-	private static final int BEACON_ALIGNMENT_TOLERANCE = 600;
+	private static final double TICKS_FOR_ALIGNMENT = 50;
+	private static final int BEACON_ALIGNMENT_TOLERANCE = 100;
 
 	/* State Machine Options */
 	private final byte STATE_RETRACTING_PLACER = 0;
 	private final byte STATE_SEARCHING = 1;
-	private final byte STATE_WAITING_FOR_PLACER = 2;
-	private final byte STATE_ROTATING_TOWARDS_GOAL = 3;
-	private final byte STATE_DRIVING_TOWARDS_GOAL = 4;
-	private final byte STATE_SCORING_IN_GOAL = 5;
-	private final byte STATE_DRIVING_TO_RAMP = 6;
-	private final byte STATE_FINISHED = 7;
+	private final byte STATE_ALIGNING_BUTTON_PUSHER = 2;
+	private final byte STATE_WAITING_FOR_PLACER = 3;
+	private final byte STATE_ROTATING_TOWARDS_GOAL = 4;
+	private final byte STATE_DRIVING_TOWARDS_GOAL = 5;
+	private final byte STATE_SCORING_IN_GOAL = 6;
+	private final byte STATE_DRIVING_TO_RAMP = 7;
+	private final byte STATE_FINISHED = 8;
 
 	/* Current State */
 	private byte autonomousState = STATE_SEARCHING;
 	private double lastButtonPusherPosition = 0;
 	private int ticksInState = 0;
 	private byte beaconsFound = 0;
+	private BeaconColorResult lastBeaconColor;
+	private BeaconColorResult.BeaconColor targetColor;
 
 	@Override
 	public void runOpMode() throws InterruptedException {
+		boolean isFirstRun = true;
+
 		robot.init(hardwareMap);
 
 		VuforiaLocalizer.Parameters params = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
@@ -72,31 +79,33 @@ public class DesignosaursAuto extends LinearOpMode {
 		VuforiaLocalizerImplSubclass vuforia = new VuforiaLocalizerImplSubclass(params);
 
 		VuforiaTrackables beacons = vuforia.loadTrackablesFromAsset("FTC_2016-17");
-		beacons.get(0).setName("Wheels");
-		beacons.get(1).setName("Tools");
-		beacons.get(2).setName("Lego");
-		beacons.get(3).setName("Gears");
+		beacons.get(0).setName("wheels");
+		beacons.get(1).setName("tools");
+		beacons.get(2).setName("legos");
+		beacons.get(3).setName("gears");
 
 		waitForStart();
-
 		beacons.activate();
 
 		while(opModeIsActive()) {
-			boolean isFirstRun = true;
+			Mat output = new Mat();
+			String imageName = "";
 
 			for(VuforiaTrackable beac : beacons) {
 				OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) beac.getListener()).getRawPose();
 
 				if(pose != null) {
+					imageName = beac.getName();
+
 					Matrix34F rawPose = new Matrix34F();
 					float[] poseData = Arrays.copyOfRange(pose.transposed().getData(), 0, 12);
 					rawPose.setData(poseData);
 
 					Vector2 center = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(0, 0, 0)));
-					Vector2 upperLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(-100, 260, 0)));//-127, 92, 0
-					Vector2 upperRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(100, 260, 0)));//127, 92, 0
-					Vector2 lowerLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(-100, 142, 0)));//-127, -92, 0
-					Vector2 lowerRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(100, 142, 0)));//127, -92, 0
+					Vector2 upperLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(-100, 260, 0))); // -127, 92, 0
+					Vector2 upperRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(100, 260, 0))); // 127, 92, 0
+					Vector2 lowerLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(-100, 142, 0))); // -127, -92, 0
+					Vector2 lowerRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(100, 142, 0))); // 127, -92, 0
 
 					if(vuforia.rgb != null) {
 						Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
@@ -122,10 +131,8 @@ public class DesignosaursAuto extends LinearOpMode {
 								canvas.drawRect(resizedbitmap.getWidth() * 12 / 30, 0, resizedbitmap.getWidth() * 17 / 30, resizedbitmap.getHeight(), paint);
 							}
 
-							Mat output = new Mat();
 							Utils.bitmapToMat(resizedbitmap, output);
 
-							ImageProcessorResult beaconResult = beaconProcessor.process(System.currentTimeMillis(), output, false);
 							FtcRobotControllerActivity.simpleController.setImage(resizedbitmap);
 							FtcRobotControllerActivity.simpleController.setImage2(bm);
 						} catch(IllegalArgumentException e) {
@@ -164,16 +171,24 @@ public class DesignosaursAuto extends LinearOpMode {
 						continue;
 
 					if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
-						robot.setDrivePower(0);
+						lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), output, false).getResult();
+						targetColor = (imageName.equals("wheels") || imageName.equals("legos")) ? BeaconColorResult.BeaconColor.BLUE : BeaconColorResult.BeaconColor.RED;
+
+						robot.setDrivePower((lastBeaconColor.getLeftColor() == targetColor) ? -DRIVE_POWER : DRIVE_POWER);
+
+						setState(STATE_ALIGNING_BUTTON_PUSHER);
+					} else
+						if(getRelativePosition() > 0)
+							robot.setDrivePower(Math.abs(getRelativePosition()) < SLOW_DOWN_AT ? DRIVE_POWER * 0.1 : DRIVE_POWER);
+						else
+							robot.setDrivePower(Math.abs(getRelativePosition()) < SLOW_DOWN_AT ? -(DRIVE_POWER * 0.1) : -DRIVE_POWER);
+				break;
+				case STATE_ALIGNING_BUTTON_PUSHER:
+					if(ticksInState == TICKS_FOR_ALIGNMENT) {
 						robot.buttonPusher.setPower(BUTTON_PUSHER_POWER);
+						robot.setDrivePower(0);
 
 						setState(STATE_WAITING_FOR_PLACER);
-					} else {
-						if(getRelativePosition() > 0) {
-							robot.setDrivePower(Math.abs(getRelativePosition()) < SLOW_DOWN_AT ? DRIVE_POWER * 0.1 : DRIVE_POWER);
-						} else {
-							robot.setDrivePower(Math.abs(getRelativePosition()) < SLOW_DOWN_AT ? -(DRIVE_POWER * 0.1) : -DRIVE_POWER);
-						}
 					}
 				break;
 				case STATE_WAITING_FOR_PLACER:
