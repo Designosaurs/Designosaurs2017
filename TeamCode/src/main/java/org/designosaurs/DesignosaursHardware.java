@@ -23,13 +23,13 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * As the claw servo approaches 0, the claw opens up (drops the game element).
  */
 public class DesignosaursHardware {
-	public static final boolean hardwareEnabled = false;
+	public static final boolean hardwareEnabled = true;
 
 	public DcMotor leftMotor = null;
 	public DcMotor rightMotor = null;
 	public DcMotor buttonPusher = null;
 
-	public static final int COUNTS_PER_REVOLUTION = 1120;
+	public static final int COUNTS_PER_REVOLUTION = 2880;
 
 	private HardwareMap hwMap = null;
 	private ElapsedTime period = new ElapsedTime();
@@ -43,14 +43,15 @@ public class DesignosaursHardware {
 		if(hardwareEnabled) {
 			leftMotor = hwMap.dcMotor.get("left");
 			rightMotor = hwMap.dcMotor.get("right");
+			buttonPusher = hwMap.dcMotor.get("buttonPusher");
 			leftMotor.setDirection(DcMotor.Direction.REVERSE);
 
 			leftMotor.setPower(0);
 			rightMotor.setPower(0);
 
-			leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-			rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-			//			buttonPusher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+			//leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+			//rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+			buttonPusher.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 		}
 	}
 
