@@ -110,56 +110,18 @@ import java.io.InputStreamReader;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import ftc.vision.BeaconProcessor;
-import ftc.vision.FrameGrabber;
-
 public class FtcRobotControllerActivity extends Activity {
 	public static FtcRobotControllerActivity instance;
-
-	////////////// START VISION PROCESSING CODE //////////////
-
-	static final int FRAME_WIDTH_REQUEST = 480;
-	static final int FRAME_HEIGHT_REQUEST = 360;
 
 	// Loads camera view of OpenCV for us to use. This lets us see using OpenCV
 	private CameraBridgeViewBase cameraBridgeViewBase;
 	private View customView;
 
-	//manages getting one frame at a time
-	public static FrameGrabber frameGrabber = null;
-
-	//set up the frameGrabber
 	void myOnCreate() {
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
 		cameraBridgeViewBase = (JavaCameraView) findViewById(R.id.show_camera_activity_java_surface_view);
 		customView = findViewById(R.id.frameLayout);
-
-		frameGrabber = new FrameGrabber(cameraBridgeViewBase, FRAME_WIDTH_REQUEST, FRAME_HEIGHT_REQUEST);
-		frameGrabber.setImageProcessor(new BeaconProcessor());
-		frameGrabber.setSaveImages(true);
-	}
-
-	//when the "Grab" button is pressed
-	public void frameButtonOnClick(View v) {
-		frameGrabber.grabSingleFrame();
-		while(!frameGrabber.isResultReady()) {
-			try {
-				Thread.sleep(5); //sleep for 5 milliseconds
-			} catch(InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		Object result = frameGrabber.getResult();
-		((TextView) findViewById(R.id.resultText)).setText(result.toString());
-	}
-
-	void myOnWindowFocusChanged(boolean hasFocus) {
-		if(hasFocus) {
-			frameGrabber.stopFrameGrabber();
-		} else {
-			frameGrabber.throwAwayFrames();
-		}
 	}
 
 	void myOnPause() {
@@ -190,26 +152,25 @@ public class FtcRobotControllerActivity extends Activity {
 			switch(status) {
 				case LoaderCallbackInterface.SUCCESS:
 					Log.i(TAG, "OpenCV Manager Connected");
-					//from now onwards, you can use OpenCV API
-					//          Mat m = new Mat(5, 10, CvType.CV_8UC1, new Scalar(0));
+
 					cameraBridgeViewBase.enableView();
-					break;
+				break;
 				case LoaderCallbackInterface.INIT_FAILED:
 					Log.i(TAG, "Init Failed");
-					break;
+				break;
 				case LoaderCallbackInterface.INSTALL_CANCELED:
 					Log.i(TAG, "Install Cancelled");
-					break;
+				break;
 				case LoaderCallbackInterface.INCOMPATIBLE_MANAGER_VERSION:
 					Log.i(TAG, "Incompatible Version");
-					break;
+				break;
 				case LoaderCallbackInterface.MARKET_ERROR:
 					Log.i(TAG, "Market Error");
-					break;
+				break;
 				default:
 					Log.i(TAG, "OpenCV Manager Install");
 					super.onManagerConnected(status);
-					break;
+				break;
 			}
 		}
 	};
@@ -528,9 +489,7 @@ public class FtcRobotControllerActivity extends Activity {
 	@Override
 	public void onWindowFocusChanged(boolean hasFocus) {
 		super.onWindowFocusChanged(hasFocus);
-		////////////// START VISION PROCESSING CODE //////////////
-		myOnWindowFocusChanged(hasFocus);
-		////////////// END VISION PROCESSING CODE //////////////
+
 		// When the window loses focus (e.g., the action overflow is shown),
 		// cancel any pending hide action. When the window gains focus,
 		// hide the system UI.
