@@ -111,71 +111,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class FtcRobotControllerActivity extends Activity {
-	public static FtcRobotControllerActivity instance;
 
-	// Loads camera view of OpenCV for us to use. This lets us see using OpenCV
-	private CameraBridgeViewBase cameraBridgeViewBase;
-	private View customView;
-
-	void myOnCreate() {
-		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-		cameraBridgeViewBase = (JavaCameraView) findViewById(R.id.show_camera_activity_java_surface_view);
-		customView = findViewById(R.id.frameLayout);
-	}
-
-	void myOnPause() {
-		if(cameraBridgeViewBase != null) {
-			cameraBridgeViewBase.disableView();
-		}
-	}
-
-	void myOnResume() {
-		if(!OpenCVLoader.initDebug()) {
-			Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
-			OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
-		} else {
-			Log.d(TAG, "OpenCV library found inside package. Using it!");
-			mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-		}
-	}
-
-	public void myOnDestroy() {
-		if(cameraBridgeViewBase != null) {
-			cameraBridgeViewBase.disableView();
-		}
-	}
-
-	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
-		@Override
-		public void onManagerConnected(int status) {
-			switch(status) {
-				case LoaderCallbackInterface.SUCCESS:
-					Log.i(TAG, "OpenCV Manager Connected");
-
-					cameraBridgeViewBase.enableView();
-				break;
-				case LoaderCallbackInterface.INIT_FAILED:
-					Log.i(TAG, "Init Failed");
-				break;
-				case LoaderCallbackInterface.INSTALL_CANCELED:
-					Log.i(TAG, "Install Cancelled");
-				break;
-				case LoaderCallbackInterface.INCOMPATIBLE_MANAGER_VERSION:
-					Log.i(TAG, "Incompatible Version");
-				break;
-				case LoaderCallbackInterface.MARKET_ERROR:
-					Log.i(TAG, "Market Error");
-				break;
-				default:
-					Log.i(TAG, "OpenCV Manager Install");
-					super.onManagerConnected(status);
-				break;
-			}
-		}
-	};
-
-	////////////// END VISION PROCESSING CODE //////////////
 	public static final String TAG = "RCActivity";
 
 	private static final int REQUEST_CONFIG_WIFI_CHANNEL = 1;
@@ -280,11 +216,10 @@ public class FtcRobotControllerActivity extends Activity {
 
 		this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
-		////////////// START VISION PROCESSING CODE //////////////
-		myOnCreate();
-		////////////// END VISION PROCESSING CODE //////////////
-
 		/////////////// HERE LIES THE SUPER COOL WEBSERVER //////////////
+
+		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
 		try {
 			InputStream is = getResources().getAssets().open("web/page.html");
 			BufferedReader reader = new BufferedReader(new InputStreamReader(is));
@@ -303,7 +238,6 @@ public class FtcRobotControllerActivity extends Activity {
 		}
 		////////////// THE COOL WEBSERVER IS ABOVE //////////////
 
-		instance = this;
 		context = this;
 		utility = new Utility(this);
 		appUtil.setThisApp(new PeerAppRobotController(context));
@@ -400,10 +334,6 @@ public class FtcRobotControllerActivity extends Activity {
 	protected void onResume() {
 		super.onResume();
 
-		////////////// START VISION PROCESSING CODE //////////////
-		myOnResume();
-		////////////// END VISION PROCESSING CODE //////////////
-
 		RobotLog.vv(TAG, "onResume()");
 		readNetworkType(NETWORK_TYPE_FILENAME);
 	}
@@ -411,10 +341,6 @@ public class FtcRobotControllerActivity extends Activity {
 	@Override
 	public void onPause() {
 		super.onPause();
-
-		////////////// START VISION PROCESSING CODE //////////////
-		myOnPause();
-		////////////// END VISION PROCESSING CODE //////////////
 
 		RobotLog.vv(TAG, "onPause()");
 		if(programmingModeController.isActive()) {
@@ -437,10 +363,6 @@ public class FtcRobotControllerActivity extends Activity {
 	public void onDestroy() {
 		super.onDestroy();
 		RobotLog.vv(TAG, "onDestroy()");
-
-		////////////// START VISION PROCESSING CODE //////////////
-		myOnDestroy();
-		////////////// END VISION PROCESSING CODE //////////////
 
 		unbindFromService();
 		wifiLock.release();
@@ -523,9 +445,6 @@ public class FtcRobotControllerActivity extends Activity {
 				programmingModeIntent.putExtra(LaunchActivityConstantsList.PROGRAMMING_MODE_ACTIVITY_NETWORK_TYPE, networkType);
 				startActivity(programmingModeIntent);
 			}
-			return true;
-		} else if(id == R.id.camera_debug_mode) {
-			customView.setVisibility((customView.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
 			return true;
 		} else if(id == R.id.action_inspection_mode) {
 			Intent inspectionModeIntent = new Intent(RcInspectionActivity.rcLaunchIntent);
