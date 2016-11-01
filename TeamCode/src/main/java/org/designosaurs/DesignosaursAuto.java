@@ -202,6 +202,19 @@ public class DesignosaursAuto extends LinearOpMode {
 					}
 				break;
 				case STATE_ROTATING_TOWARDS_GOAL:
+					robot.rotateToPosition(45, DRIVE_POWER);
+					setState(STATE_DRIVING_TOWARDS_GOAL);
+				break;
+				case STATE_DRIVING_TOWARDS_GOAL:
+					robot.driveStraightFeet(4, DRIVE_POWER);
+					setState(STATE_SCORING_IN_GOAL);
+				break;
+				case STATE_SCORING_IN_GOAL:
+					// ...
+					setState(STATE_DRIVING_TO_RAMP);
+				break;
+				case STATE_DRIVING_TO_RAMP:
+					robot.driveStraightFeet(3, DRIVE_POWER);
 				break;
 			}
 

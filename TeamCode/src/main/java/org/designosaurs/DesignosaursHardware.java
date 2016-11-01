@@ -30,6 +30,10 @@ public class DesignosaursHardware {
 	public DcMotor buttonPusher = null;
 
 	public static final int COUNTS_PER_REVOLUTION = 2880;
+	public static final int COUNTS_PER_FOOT = 8640;
+
+	private static final int MIN_DRIFT_CORRECTION = COUNTS_PER_REVOLUTION / 10;
+	private static final double DRIFT_CORRECTION_FACTOR = 0.9;
 
 	private HardwareMap hwMap = null;
 	private ElapsedTime period = new ElapsedTime();
@@ -49,8 +53,8 @@ public class DesignosaursHardware {
 			leftMotor.setPower(0);
 			rightMotor.setPower(0);
 
-			//leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-			//rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+			leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+			rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 			buttonPusher.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 		}
 	}
@@ -68,5 +72,53 @@ public class DesignosaursHardware {
 		if(remaining > 0) Thread.sleep(remaining);
 
 		period.reset();
+	}
+
+	public void rotateToPosition(int degrees, double power) {
+		leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+		rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+		DcMotor targetMotor = degrees > 0 ? rightMotor : leftMotor;
+		double targetPosition = (degrees / 360) * COUNTS_PER_REVOLUTION * 3;
+
+		while(targetMotor.getCurrentPosition() < targetPosition) {
+			try {
+				Thread.sleep(50);
+			} catch(InterruptedException e) {}
+		}
+
+		leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+		rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+	}
+
+	public void driveStraightFeet(double distance, double power) {
+		leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+		rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+		leftMotor.setPower(power);
+		rightMotor.setPower(power);
+
+		boolean alreadyCorrect = true;
+
+		while((leftMotor.getCurrentPosition() + rightMotor.getCurrentPosition()) / 2 < distance * COUNTS_PER_FOOT) {
+			if(Math.abs(leftMotor.getCurrentPosition() - rightMotor.getCurrentPosition()) > MIN_DRIFT_CORRECTION) {
+				alreadyCorrect = false;
+
+				if((leftMotor.getCurrentPosition() - rightMotor.getCurrentPosition()) > 0)
+					rightMotor.setPower(power * DRIFT_CORRECTION_FACTOR);
+				else
+					leftMotor.setPower(power * DRIFT_CORRECTION_FACTOR);
+			} else {
+				if(!alreadyCorrect) {
+					alreadyCorrect = true;
+
+					leftMotor.setPower(power);
+					rightMotor.setPower(power);
+				}
+			}
+		}
+
+		leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+		rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 	}
 }
