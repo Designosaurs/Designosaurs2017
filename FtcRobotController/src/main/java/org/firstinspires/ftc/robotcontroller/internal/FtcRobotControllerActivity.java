@@ -106,7 +106,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class FtcRobotControllerActivity extends Activity {
-	public static FtcRobotControllerActivity instance;
 
 	public static final String TAG = "RCActivity";
 
@@ -214,6 +213,9 @@ public class FtcRobotControllerActivity extends Activity {
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
 		/////////////// HERE LIES THE SUPER COOL WEBSERVER //////////////
+
+		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
 		try {
 			InputStream is = getResources().getAssets().open("web/page.html");
 			BufferedReader reader = new BufferedReader(new InputStreamReader(is));
@@ -232,7 +234,6 @@ public class FtcRobotControllerActivity extends Activity {
 		}
 		////////////// THE COOL WEBSERVER IS ABOVE //////////////
 
-		instance = this;
 		context = this;
 		utility = new Utility(this);
 		appUtil.setThisApp(new PeerAppRobotController(context));
