@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.util.Log;
 
 import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -25,7 +26,7 @@ import java.util.Arrays;
 
 import ftc.vision.BeaconColorResult;
 import ftc.vision.BeaconProcessor;
-import ftc.vision.ImageProcessorResult;
+import org.opencv.android.OpenCVLoader;
 
 @Autonomous(name = "Designosaurs Autonomous", group = "Auto")
 public class DesignosaursAuto extends LinearOpMode {
@@ -66,6 +67,8 @@ public class DesignosaursAuto extends LinearOpMode {
 	private BeaconColorResult lastBeaconColor;
 	private BeaconColorResult.BeaconColor targetColor;
 
+	private static String TAG = "DesignosaursAuto";
+
 	@Override
 	public void runOpMode() throws InterruptedException {
 		boolean isFirstRun = true;
@@ -83,6 +86,8 @@ public class DesignosaursAuto extends LinearOpMode {
 		beacons.get(1).setName("tools");
 		beacons.get(2).setName("legos");
 		beacons.get(3).setName("gears");
+
+		OpenCVLoader.initDebug();
 
 		waitForStart();
 		beacons.activate();
@@ -154,7 +159,7 @@ public class DesignosaursAuto extends LinearOpMode {
 
 			if(autonomousState != STATE_RETRACTING_PLACER && autonomousState != STATE_WAITING_FOR_PLACER)
 				if(Math.abs(buttonPusherPositionDelta) > BUTTON_PUSHER_THRESHOLD)
-					robot.buttonPusher.setPower(buttonPusherPositionDelta > 0 ? -BUTTON_PUSHER_POWER : BUTTON_PUSHER_POWER);
+					robot.buttonPusher.setPower(buttonPusherPositionDelta > 0 ? BUTTON_PUSHER_POWER : -BUTTON_PUSHER_POWER);
 				else
 					robot.buttonPusher.setPower(0);
 
