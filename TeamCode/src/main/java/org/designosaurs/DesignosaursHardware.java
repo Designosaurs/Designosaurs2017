@@ -55,6 +55,8 @@ public class DesignosaursHardware {
 
 			leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 			rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+			leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+			rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 			buttonPusher.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 		}
 	}
@@ -77,6 +79,8 @@ public class DesignosaursHardware {
 	public void rotateToPosition(int degrees, double power) {
 		leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 		rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+		leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
 		DcMotor targetMotor = degrees > 0 ? rightMotor : leftMotor;
 		double targetPosition = (degrees / 360) * COUNTS_PER_REVOLUTION * 3;
@@ -89,11 +93,15 @@ public class DesignosaursHardware {
 
 		leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 		rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+		leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 	}
 
 	public void driveStraightFeet(double distance, double power) {
 		leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 		rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+		leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
 		leftMotor.setPower(power);
 		rightMotor.setPower(power);
@@ -120,5 +128,7 @@ public class DesignosaursHardware {
 
 		leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 		rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+		leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 	}
 }
