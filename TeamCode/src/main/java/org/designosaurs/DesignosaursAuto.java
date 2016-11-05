@@ -9,6 +9,7 @@ import android.util.Log;
 import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.vuforia.Matrix34F;
 import com.vuforia.Tool;
 import com.vuforia.Vec3F;
@@ -22,6 +23,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import ftc.vision.BeaconColorResult;
@@ -41,8 +43,8 @@ public class DesignosaursAuto extends LinearOpMode {
 
 	private static final double DRIVE_POWER = 0.75;
 	private static final double SLOW_DOWN_AT = 3000;
-	private static final double BUTTON_PUSHER_POWER = 0.75;
-	private static final double BUTTON_PUSHER_MOVEMENT_THRESHOLD = 10;
+	private static final double BUTTON_PUSHER_POWER = 0.25;
+	private static final double BUTTON_PUSHER_MOVEMENT_THRESHOLD = 5;
 	private static final double BUTTON_PUSHER_TARGET_IDLE_POSITION = 3 * DesignosaursHardware.COUNTS_PER_REVOLUTION;
 	private static final double BUTTON_PUSHER_THRESHOLD = DesignosaursHardware.COUNTS_PER_REVOLUTION / 10;
 	private static final double TICKS_FOR_ALIGNMENT = 50;
@@ -60,7 +62,7 @@ public class DesignosaursAuto extends LinearOpMode {
 	private final byte STATE_FINISHED = 8;
 
 	/* Current State */
-	private byte autonomousState = STATE_SEARCHING;
+	private byte autonomousState = STATE_RETRACTING_PLACER;
 	private double lastButtonPusherPosition = 0;
 	private int ticksInState = 0;
 	private byte beaconsFound = 0;
@@ -91,6 +93,12 @@ public class DesignosaursAuto extends LinearOpMode {
 
 		waitForStart();
 		beacons.activate();
+
+		ArrayList<Double> lastButtonPusherPositions = new ArrayList<>(10);
+		for(int i = 1; i <= 500; i++)
+			lastButtonPusherPositions.add(100.0);
+
+		robot.buttonPusher.setPower(-BUTTON_PUSHER_POWER);
 
 		while(opModeIsActive()) {
 			Mat output = new Mat();
@@ -157,36 +165,59 @@ public class DesignosaursAuto extends LinearOpMode {
 			double buttonPusherMovementSinceLastTick = robot.buttonPusher.getCurrentPosition() - lastButtonPusherPosition;
 			lastButtonPusherPosition = robot.buttonPusher.getCurrentPosition();
 
+			/*
 			if(autonomousState != STATE_RETRACTING_PLACER && autonomousState != STATE_WAITING_FOR_PLACER)
 				if(Math.abs(buttonPusherPositionDelta) > BUTTON_PUSHER_THRESHOLD)
 					robot.buttonPusher.setPower(buttonPusherPositionDelta > 0 ? BUTTON_PUSHER_POWER : -BUTTON_PUSHER_POWER);
 				else
 					robot.buttonPusher.setPower(0);
+			*/
 
 			if(autonomousState <= STATE_SEARCHING)
 				robot.setDrivePower(getRelativePosition() < SLOW_DOWN_AT ? DRIVE_POWER * 0.5 : DRIVE_POWER);
 
 			switch(autonomousState) {
 				case STATE_RETRACTING_PLACER:
-					if((Math.abs(buttonPusherMovementSinceLastTick) < BUTTON_PUSHER_MOVEMENT_THRESHOLD) && ticksInState > 30)
-						setState(STATE_SEARCHING);
+					if(ticksInState > 500) {
+						lastButtonPusherPositions.remove(0);
+						lastButtonPusherPositions.add(Math.abs(buttonPusherMovementSinceLastTick));
+
+						Double maxValue = 0.0;
+						for(int i = 0; i < lastButtonPusherPositions.size(); i++) {
+							Double val = lastButtonPusherPositions.get(i);
+
+							if(val > maxValue)
+								maxValue = val;
+						}
+
+						Log.i("maxValue", String.valueOf(maxValue));
+
+						if(maxValue < BUTTON_PUSHER_MOVEMENT_THRESHOLD) {
+							Log.i("RobotStateSwitch", "Switching to searching state...");
+							Log.i("RobotStateSwitch", "Time in state: " + ticksInState);
+							Log.i("RobotStateSwitch", "Button pusher movement: " + maxValue);
+
+							robot.buttonPusher.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+							robot.buttonPusher.setPower(0);
+							robot.buttonPusher.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+							setState(STATE_SEARCHING);
+						}
+					}
 				break;
 				case STATE_SEARCHING:
-					if(ticksInState < 50)
-						continue;
+					if(ticksInState > 2000)
+						if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
+							lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), output, false).getResult();
+							targetColor = (imageName.equals("wheels") || imageName.equals("legos")) ? BeaconColorResult.BeaconColor.BLUE : BeaconColorResult.BeaconColor.RED;
 
-					if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
-						lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), output, false).getResult();
-						targetColor = (imageName.equals("wheels") || imageName.equals("legos")) ? BeaconColorResult.BeaconColor.BLUE : BeaconColorResult.BeaconColor.RED;
+							robot.setDrivePower((lastBeaconColor.getLeftColor() == targetColor) ? -DRIVE_POWER : DRIVE_POWER);
 
-						robot.setDrivePower((lastBeaconColor.getLeftColor() == targetColor) ? -DRIVE_POWER : DRIVE_POWER);
-
-						setState(STATE_ALIGNING_BUTTON_PUSHER);
-					} else
-						if(getRelativePosition() > 0)
-							robot.setDrivePower(Math.abs(getRelativePosition()) < SLOW_DOWN_AT ? DRIVE_POWER * 0.1 : DRIVE_POWER);
-						else
-							robot.setDrivePower(Math.abs(getRelativePosition()) < SLOW_DOWN_AT ? -(DRIVE_POWER * 0.1) : -DRIVE_POWER);
+							setState(STATE_ALIGNING_BUTTON_PUSHER);
+						} else
+							if(getRelativePosition() > 0)
+								robot.setDrivePower(Math.abs(getRelativePosition()) < SLOW_DOWN_AT ? DRIVE_POWER * 0.1 : DRIVE_POWER);
+							else
+								robot.setDrivePower(Math.abs(getRelativePosition()) < SLOW_DOWN_AT ? -(DRIVE_POWER * 0.1) : -DRIVE_POWER);
 				break;
 				case STATE_ALIGNING_BUTTON_PUSHER:
 					if(ticksInState == TICKS_FOR_ALIGNMENT) {

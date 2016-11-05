@@ -63,8 +63,8 @@ public class DesignosaursHardware {
 
 	public void setDrivePower(double power) {
 		if(hardwareEnabled) {
-			leftMotor.setPower(power);
-			rightMotor.setPower(power);
+			//leftMotor.setPower(power);
+			//rightMotor.setPower(power);
 		}
 	}
 
