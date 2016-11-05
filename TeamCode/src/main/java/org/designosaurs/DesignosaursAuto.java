@@ -43,9 +43,9 @@ public class DesignosaursAuto extends LinearOpMode {
 
 	private static final double DRIVE_POWER = 0.75;
 	private static final double SLOW_DOWN_AT = 3000;
-	private static final double BUTTON_PUSHER_POWER = 0.25;
-	private static final double BUTTON_PUSHER_MOVEMENT_THRESHOLD = 5;
-	private static final double BUTTON_PUSHER_TARGET_IDLE_POSITION = 3 * DesignosaursHardware.COUNTS_PER_REVOLUTION;
+	private static final double BUTTON_PUSHER_POWER = 0.5;
+	private static final double BUTTON_PUSHER_MOVEMENT_THRESHOLD = 3;
+	private static final double BUTTON_PUSHER_TARGET_IDLE_POSITION = DesignosaursHardware.COUNTS_PER_REVOLUTION;
 	private static final double BUTTON_PUSHER_THRESHOLD = DesignosaursHardware.COUNTS_PER_REVOLUTION / 10;
 	private static final double TICKS_FOR_ALIGNMENT = 50;
 	private static final int BEACON_ALIGNMENT_TOLERANCE = 100;
@@ -65,7 +65,7 @@ public class DesignosaursAuto extends LinearOpMode {
 	private byte autonomousState = STATE_RETRACTING_PLACER;
 	private double lastButtonPusherPosition = 0;
 	private int ticksInState = 0;
-	private byte beaconsFound = 0;
+	private int ticksRunning = 0;
 	private BeaconColorResult lastBeaconColor;
 	private BeaconColorResult.BeaconColor targetColor;
 
@@ -94,11 +94,15 @@ public class DesignosaursAuto extends LinearOpMode {
 		waitForStart();
 		beacons.activate();
 
+		/* Current State */
 		ArrayList<Double> lastButtonPusherPositions = new ArrayList<>(10);
 		for(int i = 1; i <= 500; i++)
 			lastButtonPusherPositions.add(100.0);
 
 		robot.buttonPusher.setPower(-BUTTON_PUSHER_POWER);
+
+		byte beaconsFound = 0;
+		int ticksAdjustingButtonPusher = 0;
 
 		while(opModeIsActive()) {
 			Mat output = new Mat();
@@ -161,47 +165,52 @@ public class DesignosaursAuto extends LinearOpMode {
 			telemetry.addData("state", autonomousState);
 			telemetry.update();
 
-			double buttonPusherPositionDelta = robot.buttonPusher.getCurrentPosition() - BUTTON_PUSHER_TARGET_IDLE_POSITION;
-			double buttonPusherMovementSinceLastTick = robot.buttonPusher.getCurrentPosition() - lastButtonPusherPosition;
-			lastButtonPusherPosition = robot.buttonPusher.getCurrentPosition();
+			double buttonPusherMovementSinceLastTick = robot.getAdjustedEncoderPosition(robot.buttonPusher) - lastButtonPusherPosition;
+			boolean buttonPusherIsStuck = false;
+			double buttonPusherMaxMovement = 0.0;
 
-			/*
-			if(autonomousState != STATE_RETRACTING_PLACER && autonomousState != STATE_WAITING_FOR_PLACER)
+			lastButtonPusherPosition = robot.getAdjustedEncoderPosition(robot.buttonPusher);
+
+			if(ticksRunning > 500) {
+				lastButtonPusherPositions.remove(0);
+				lastButtonPusherPositions.add(Math.abs(buttonPusherMovementSinceLastTick));
+
+				for(int i = 0; i < lastButtonPusherPositions.size(); i++) {
+					Double val = lastButtonPusherPositions.get(i);
+
+					if(val > buttonPusherMaxMovement)
+						buttonPusherMaxMovement = val;
+				}
+
+				if(buttonPusherMaxMovement < BUTTON_PUSHER_MOVEMENT_THRESHOLD)
+					buttonPusherIsStuck = true;
+			}
+
+			if(autonomousState != STATE_RETRACTING_PLACER && autonomousState != STATE_WAITING_FOR_PLACER) {
+				ticksAdjustingButtonPusher++;
+
+				double buttonPusherPositionDelta = robot.getAdjustedEncoderPosition(robot.buttonPusher) - BUTTON_PUSHER_TARGET_IDLE_POSITION;
+
 				if(Math.abs(buttonPusherPositionDelta) > BUTTON_PUSHER_THRESHOLD)
-					robot.buttonPusher.setPower(buttonPusherPositionDelta > 0 ? BUTTON_PUSHER_POWER : -BUTTON_PUSHER_POWER);
+					robot.buttonPusher.setPower(buttonPusherPositionDelta > 0 ? -BUTTON_PUSHER_POWER : BUTTON_PUSHER_POWER);
 				else
-					robot.buttonPusher.setPower(0);
-			*/
+					if(ticksAdjustingButtonPusher > 1500) {
+						robot.buttonPusher.setPower(0);
+						Log.i("buttonPusherState", "*** RESETTING ***");
+
+						ticksAdjustingButtonPusher = 0;
+					}
+			}
 
 			if(autonomousState <= STATE_SEARCHING)
 				robot.setDrivePower(getRelativePosition() < SLOW_DOWN_AT ? DRIVE_POWER * 0.5 : DRIVE_POWER);
 
 			switch(autonomousState) {
 				case STATE_RETRACTING_PLACER:
-					if(ticksInState > 500) {
-						lastButtonPusherPositions.remove(0);
-						lastButtonPusherPositions.add(Math.abs(buttonPusherMovementSinceLastTick));
-
-						Double maxValue = 0.0;
-						for(int i = 0; i < lastButtonPusherPositions.size(); i++) {
-							Double val = lastButtonPusherPositions.get(i);
-
-							if(val > maxValue)
-								maxValue = val;
-						}
-
-						Log.i("maxValue", String.valueOf(maxValue));
-
-						if(maxValue < BUTTON_PUSHER_MOVEMENT_THRESHOLD) {
-							Log.i("RobotStateSwitch", "Switching to searching state...");
-							Log.i("RobotStateSwitch", "Time in state: " + ticksInState);
-							Log.i("RobotStateSwitch", "Button pusher movement: " + maxValue);
-
-							robot.buttonPusher.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-							robot.buttonPusher.setPower(0);
-							robot.buttonPusher.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-							setState(STATE_SEARCHING);
-						}
+					if(buttonPusherIsStuck) {
+						robot.buttonPusher.setPower(0);
+						robot.resetEncoder(robot.buttonPusher);
+						setState(STATE_SEARCHING);
 					}
 				break;
 				case STATE_SEARCHING:
@@ -228,7 +237,7 @@ public class DesignosaursAuto extends LinearOpMode {
 					}
 				break;
 				case STATE_WAITING_FOR_PLACER:
-					if((Math.abs(buttonPusherMovementSinceLastTick) < BUTTON_PUSHER_MOVEMENT_THRESHOLD) && ticksInState > 30) {
+					if(buttonPusherIsStuck && ticksInState > 500) {
 						beaconsFound++;
 
 						if(beaconsFound < 2)
@@ -255,10 +264,15 @@ public class DesignosaursAuto extends LinearOpMode {
 			}
 
 			ticksInState++;
+			ticksRunning++;
 		}
 	}
 
 	private void setState(byte newState) {
+		Log.i("DesignosaursAuto", "*** SWITCHING STATES ***");
+		Log.i("DesignosaursAuto", "New state: " + String.valueOf(newState));
+		Log.i("DesignosaursAuto", "Time in previous state: " + String.valueOf(ticksInState));
+
 		autonomousState = newState;
 		ticksInState = 0;
 	}

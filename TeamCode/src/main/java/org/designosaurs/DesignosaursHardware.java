@@ -1,27 +1,11 @@
 package org.designosaurs;
 
+import android.util.SparseIntArray;
+
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-/**
- * This is NOT an opmode.
- * <p>
- * This class can be used to define all the specific hardware for a single robot.
- * In this case that robot is a K9 robot.
- * <p>
- * This hardware class assumes the following device names have been configured on the robot:
- * Note:  All names are lower case and some have single spaces between words.
- * <p>
- * Motor channel:  Left  drive motor:        "left motor"
- * Motor channel:  Right drive motor:        "right motor"
- * Servo channel:  Servo to raise/lower arm: "arm"
- * Servo channel:  Servo to open/close claw: "claw"
- * <p>
- * Note: the configuration of the servos is such that:
- * As the arm servo approaches 0, the arm position moves up (away from the floor).
- * As the claw servo approaches 0, the claw opens up (drops the game element).
- */
 public class DesignosaursHardware {
 	public static final boolean hardwareEnabled = true;
 
@@ -38,6 +22,8 @@ public class DesignosaursHardware {
 	private HardwareMap hwMap = null;
 	private ElapsedTime period = new ElapsedTime();
 
+	private SparseIntArray encoderOffsets = new SparseIntArray(3);
+
 	public DesignosaursHardware() {}
 
 	/* Initialize standard Hardware interfaces */
@@ -52,12 +38,11 @@ public class DesignosaursHardware {
 
 			leftMotor.setPower(0);
 			rightMotor.setPower(0);
+			buttonPusher.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
-			leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-			rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-			leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-			rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-			buttonPusher.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+			encoderOffsets.put(leftMotor.hashCode(), 0);
+			encoderOffsets.put(rightMotor.hashCode(), 0);
+			encoderOffsets.put(buttonPusher.hashCode(), 0);
 		}
 	}
 
@@ -77,39 +62,30 @@ public class DesignosaursHardware {
 	}
 
 	public void rotateToPosition(int degrees, double power) {
-		leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-		rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-		leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-		rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		resetEncoder(leftMotor);
+		resetEncoder(rightMotor);
 
 		DcMotor targetMotor = degrees > 0 ? rightMotor : leftMotor;
 		double targetPosition = (degrees / 360) * COUNTS_PER_REVOLUTION * 3;
 
-		while(targetMotor.getCurrentPosition() < targetPosition) {
+		while(getAdjustedEncoderPosition(targetMotor) < targetPosition) {
 			try {
 				Thread.sleep(50);
 			} catch(InterruptedException e) {}
 		}
-
-		leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-		rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-		leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-		rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 	}
 
 	public void driveStraightFeet(double distance, double power) {
-		leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-		rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-		leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-		rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		resetEncoder(leftMotor);
+		resetEncoder(rightMotor);
 
 		leftMotor.setPower(power);
 		rightMotor.setPower(power);
 
 		boolean alreadyCorrect = true;
 
-		while((leftMotor.getCurrentPosition() + rightMotor.getCurrentPosition()) / 2 < distance * COUNTS_PER_FOOT) {
-			if(Math.abs(leftMotor.getCurrentPosition() - rightMotor.getCurrentPosition()) > MIN_DRIFT_CORRECTION) {
+		while((getAdjustedEncoderPosition(leftMotor) + getAdjustedEncoderPosition(rightMotor)) / 2 < distance * COUNTS_PER_FOOT) {
+			if(Math.abs(getAdjustedEncoderPosition(leftMotor) - getAdjustedEncoderPosition(rightMotor)) > MIN_DRIFT_CORRECTION) {
 				alreadyCorrect = false;
 
 				if((leftMotor.getCurrentPosition() - rightMotor.getCurrentPosition()) > 0)
@@ -126,9 +102,15 @@ public class DesignosaursHardware {
 			}
 		}
 
-		leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-		rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-		leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-		rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		resetEncoder(leftMotor);
+		resetEncoder(rightMotor);
+	}
+
+	public double getAdjustedEncoderPosition(DcMotor motor) {
+		return motor.getCurrentPosition() - encoderOffsets.get(motor.hashCode());
+	}
+
+	public void resetEncoder(DcMotor motor) {
+		encoderOffsets.put(motor.hashCode(), motor.getCurrentPosition());
 	}
 }
