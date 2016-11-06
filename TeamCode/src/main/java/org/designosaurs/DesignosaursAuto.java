@@ -9,7 +9,6 @@ import android.util.Log;
 import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.vuforia.Matrix34F;
 import com.vuforia.Tool;
 import com.vuforia.Vec3F;
@@ -41,19 +40,18 @@ public class DesignosaursAuto extends LinearOpMode {
 
 	private final String VUFORIA_LICENCE_KEY = "ATwI0oz/////AAAAGe9HyiYVEU6pmTFAb65tOfUrioTxlZtITHRLN1h3wllaw67kJsUOHwPVDsCN0vxiKy/9Qi9NnjpkVfUnn0gwIHyKJgTYkG7+dCaJtFJlY94qa1YPCy0y4rwhVQFkDkcaCiNoiS7ZSU5KLeIABF4Gvz9qYwJJtwxWGp4fbjyu+arTOUw160+Fg5XMjoftS8FAQPx4wF33sVdGw+CYX0fHdwQzOyN0PpIwBQ9xvb8e1c76FoHF0YUZyV/q0XeR97nRj1TfnesPc+v7Z72SEDCXAAdVVS6L9u/mVAxq4zTaXsdGcVsqHeaouoGmQ/1Ey/YYShqHaRZXWwC4GsgaxO9tCkWNH+hTjFZA2pgvKVl5HmLR";
 
-	private static final double DRIVE_POWER = 0.75;
+	private static final double DRIVE_POWER = 0.2;
 	private static final double SLOW_DOWN_AT = 3000;
-	private static final double BUTTON_PUSHER_POWER = 0.5;
+	private static final double BUTTON_PUSHER_POWER = 0.2;
 	private static final double BUTTON_PUSHER_MOVEMENT_THRESHOLD = 3;
-	private static final double BUTTON_PUSHER_TARGET_IDLE_POSITION = DesignosaursHardware.COUNTS_PER_REVOLUTION;
-	private static final double BUTTON_PUSHER_THRESHOLD = DesignosaursHardware.COUNTS_PER_REVOLUTION / 10;
-	private static final double TICKS_FOR_ALIGNMENT = 50;
-	private static final int BEACON_ALIGNMENT_TOLERANCE = 100;
+	private static final double BUTTON_PUSHER_TARGET_IDLE_POSITION = DesignosaursHardware.COUNTS_PER_REVOLUTION * 0.5;
+	private static final double BUTTON_PUSHER_THRESHOLD = 1000;
+	private static final int BEACON_ALIGNMENT_TOLERANCE = 200;
 
 	/* State Machine Options */
 	private final byte STATE_RETRACTING_PLACER = 0;
 	private final byte STATE_SEARCHING = 1;
-	private final byte STATE_ALIGNING_BUTTON_PUSHER = 2;
+	private final byte STATE_ALIGNING_WITH_BEACON = 2;
 	private final byte STATE_WAITING_FOR_PLACER = 3;
 	private final byte STATE_ROTATING_TOWARDS_GOAL = 4;
 	private final byte STATE_DRIVING_TOWARDS_GOAL = 5;
@@ -96,7 +94,7 @@ public class DesignosaursAuto extends LinearOpMode {
 
 		/* Current State */
 		ArrayList<Double> lastButtonPusherPositions = new ArrayList<>(10);
-		for(int i = 1; i <= 500; i++)
+		for(int i = 1; i <= 300; i++)
 			lastButtonPusherPositions.add(100.0);
 
 		robot.buttonPusher.setPower(-BUTTON_PUSHER_POWER);
@@ -107,6 +105,7 @@ public class DesignosaursAuto extends LinearOpMode {
 		while(opModeIsActive()) {
 			Mat output = new Mat();
 			String imageName = "";
+			boolean havePixelData = true;
 
 			for(VuforiaTrackable beac : beacons) {
 				OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) beac.getListener()).getRawPose();
@@ -135,7 +134,7 @@ public class DesignosaursAuto extends LinearOpMode {
 						Vector2 end = new Vector2(Math.max(0, Math.max(lowerRight.X, upperRight.X)), Math.min(bm.getHeight()-1,Math.max(0, Math.max(lowerLeft.Y, lowerRight.Y))));
 
 						try {
-							Bitmap a = Bitmap.createBitmap(bm, start.X, start.Y, end.X, end.Y);
+							Bitmap a = Bitmap.createBitmap(bm, start.X, start.Y, Math.min(end.X, (1280 - start.X) > 0 ? 1280 - start.X : 50), Math.min(end.Y, (720 - start.Y) > 0 ? 720 - start.Y : 50));
 
 							Bitmap resizedbitmap = DesignosaursUtils.resize(a, a.getWidth() / 2, a.getHeight() / 2);
 							resizedbitmap = DesignosaursUtils.rotate(resizedbitmap, 90);
@@ -153,7 +152,8 @@ public class DesignosaursAuto extends LinearOpMode {
 							FtcRobotControllerActivity.simpleController.setImage(resizedbitmap);
 							FtcRobotControllerActivity.simpleController.setImage2(bm);
 						} catch(IllegalArgumentException e) {
-							e.printStackTrace();
+							havePixelData = false;
+							//e.printStackTrace();
 						}
 					}
 				}
@@ -196,54 +196,88 @@ public class DesignosaursAuto extends LinearOpMode {
 				else
 					if(ticksAdjustingButtonPusher > 1500) {
 						robot.buttonPusher.setPower(0);
-						Log.i("buttonPusherState", "*** RESETTING ***");
 
 						ticksAdjustingButtonPusher = 0;
 					}
 			}
-
-			if(autonomousState <= STATE_SEARCHING)
-				robot.setDrivePower(getRelativePosition() < SLOW_DOWN_AT ? DRIVE_POWER * 0.5 : DRIVE_POWER);
 
 			switch(autonomousState) {
 				case STATE_RETRACTING_PLACER:
 					if(buttonPusherIsStuck) {
 						robot.buttonPusher.setPower(0);
 						robot.resetEncoder(robot.buttonPusher);
+						robot.setDrivePower(DRIVE_POWER);
+
 						setState(STATE_SEARCHING);
 					}
 				break;
 				case STATE_SEARCHING:
-					if(ticksInState > 2000)
+					if(ticksInState > 1000) {
+						Log.i("relativePosition", String.valueOf(getRelativePosition()));
+
+						if(Math.abs(getRelativePosition()) > SLOW_DOWN_AT)
+							robot.setDrivePower(0.6 * DRIVE_POWER);
+
 						if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
-							lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), output, false).getResult();
-							targetColor = (imageName.equals("wheels") || imageName.equals("legos")) ? BeaconColorResult.BeaconColor.BLUE : BeaconColorResult.BeaconColor.RED;
+							robot.setDrivePower(0);
 
-							robot.setDrivePower((lastBeaconColor.getLeftColor() == targetColor) ? -DRIVE_POWER : DRIVE_POWER);
+							if(havePixelData) {
+								lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), output, false).getResult();
+								targetColor = (imageName.equals("wheels") || imageName.equals("legos")) ? BeaconColorResult.BeaconColor.BLUE : BeaconColorResult.BeaconColor.RED;
 
-							setState(STATE_ALIGNING_BUTTON_PUSHER);
+								Log.i("DesignosaursAuto", "*** BEACON FOUND ***");
+								Log.i("DesignosaursAuto", "Target color: " + (targetColor == BeaconColorResult.BeaconColor.BLUE ? "Blue" : "Red"));
+
+								robot.setDrivePower((lastBeaconColor.getLeftColor() == targetColor) ? -DRIVE_POWER * 0.5 : DRIVE_POWER * 0.5);
+								robot.resetEncoder(robot.leftMotor);
+								robot.resetEncoder(robot.rightMotor);
+
+								setState(STATE_ALIGNING_WITH_BEACON);
+							} else
+								Log.w("DesignosaursAuto", "Beacon is seen, but failed to transfer data to OpenCV.");
 						} else
-							if(getRelativePosition() > 0)
-								robot.setDrivePower(Math.abs(getRelativePosition()) < SLOW_DOWN_AT ? DRIVE_POWER * 0.1 : DRIVE_POWER);
-							else
-								robot.setDrivePower(Math.abs(getRelativePosition()) < SLOW_DOWN_AT ? -(DRIVE_POWER * 0.1) : -DRIVE_POWER);
+							if(Math.abs(getRelativePosition()) < SLOW_DOWN_AT)
+								if(getRelativePosition() > 0)
+									robot.setDrivePower(DRIVE_POWER * 0.5);
+								else
+									robot.setDrivePower(DRIVE_POWER * -0.5);
+					}
 				break;
-				case STATE_ALIGNING_BUTTON_PUSHER:
-					if(ticksInState == TICKS_FOR_ALIGNMENT) {
-						robot.buttonPusher.setPower(BUTTON_PUSHER_POWER);
+				case STATE_ALIGNING_WITH_BEACON:
+					if(Math.abs(robot.getAdjustedEncoderPosition(robot.leftMotor)) >= 600) {
+						Log.i("DesignosaursAuto", "//// DEPLOYING ////");
+
+						ticksAdjustingButtonPusher = 0;
+						robot.buttonPusher.setPower(0.1);
+
 						robot.setDrivePower(0);
+						lastButtonPusherPositions.clear();
+						for(int i = 1; i <= 5; i++)
+							lastButtonPusherPositions.add(100.0);
 
 						setState(STATE_WAITING_FOR_PLACER);
+					} else {
+						Log.i("DesignosaursAuto", "Aligning... " + ticksInState);
 					}
 				break;
 				case STATE_WAITING_FOR_PLACER:
-					if(buttonPusherIsStuck && ticksInState > 500) {
+					if(ticksInState > 30 || (buttonPusherIsStuck && ticksInState > 4)) {
 						beaconsFound++;
 
+						centeredPos = Integer.MAX_VALUE;
+
+						/*
 						if(beaconsFound < 2)
 							setState(STATE_SEARCHING);
 						else
 							setState(STATE_ROTATING_TOWARDS_GOAL);
+						*/
+
+						lastButtonPusherPositions.clear();
+						for(int i = 1; i <= 300; i++)
+							lastButtonPusherPositions.add(100.0);
+
+						robot.buttonPusher.setPower(0);
 					}
 				break;
 				case STATE_ROTATING_TOWARDS_GOAL:
@@ -278,6 +312,6 @@ public class DesignosaursAuto extends LinearOpMode {
 	}
 
 	private int getRelativePosition() {
-		return centeredPos - 640;
+		return centeredPos - 840;
 	}
 }
