@@ -15,10 +15,10 @@ public class DesignosaursHardware {
 	public DcMotor buttonPusher = null;
 
 	public static final int COUNTS_PER_REVOLUTION = 2880;
-	public static final int COUNTS_PER_FOOT = 8640;
+	public static final int COUNTS_PER_FOOT = 5760;
 
 	private static final int MIN_DRIFT_CORRECTION = COUNTS_PER_REVOLUTION / 10;
-	private static final double DRIFT_CORRECTION_FACTOR = 0.9;
+	private static final double DRIFT_CORRECTION_FACTOR = 0.95;
 
 	private HardwareMap hwMap = null;
 	private ElapsedTime period = new ElapsedTime();
@@ -49,6 +49,9 @@ public class DesignosaursHardware {
 
 	public void setDrivePower(double power) {
 		if(hardwareEnabled) {
+			resetEncoder(leftMotor);
+			resetEncoder(rightMotor);
+
 			leftMotor.setPower(-power);
 			rightMotor.setPower(-power);
 		}
@@ -63,8 +66,8 @@ public class DesignosaursHardware {
 	}
 
 	public void rotateToPosition(int degrees, double power) {
-		resetEncoder(leftMotor);
 		resetEncoder(rightMotor);
+		resetEncoder(leftMotor);
 
 		DcMotor targetMotor = degrees > 0 ? rightMotor : leftMotor;
 		double targetPosition = (degrees / 360) * COUNTS_PER_REVOLUTION * 3;
@@ -76,35 +79,8 @@ public class DesignosaursHardware {
 		}
 	}
 
-	public void driveStraightFeet(double distance, double power) {
-		resetEncoder(leftMotor);
-		resetEncoder(rightMotor);
-
-		leftMotor.setPower(power);
-		rightMotor.setPower(power);
-
-		boolean alreadyCorrect = true;
-
-		while((getAdjustedEncoderPosition(leftMotor) + getAdjustedEncoderPosition(rightMotor)) / 2 < distance * COUNTS_PER_FOOT) {
-			if(Math.abs(getAdjustedEncoderPosition(leftMotor) - getAdjustedEncoderPosition(rightMotor)) > MIN_DRIFT_CORRECTION) {
-				alreadyCorrect = false;
-
-				if((leftMotor.getCurrentPosition() - rightMotor.getCurrentPosition()) > 0)
-					rightMotor.setPower(power * DRIFT_CORRECTION_FACTOR);
-				else
-					leftMotor.setPower(power * DRIFT_CORRECTION_FACTOR);
-			} else {
-				if(!alreadyCorrect) {
-					alreadyCorrect = true;
-
-					leftMotor.setPower(power);
-					rightMotor.setPower(power);
-				}
-			}
-		}
-
-		resetEncoder(leftMotor);
-		resetEncoder(rightMotor);
+	public double getDistance() {
+		return (getAdjustedEncoderPosition(leftMotor) + getAdjustedEncoderPosition(rightMotor)) / 2 * COUNTS_PER_FOOT;
 	}
 
 	public int getAdjustedEncoderPosition(DcMotor motor) {

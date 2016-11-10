@@ -1,29 +1,13 @@
 package org.designosaurs;
 
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.util.Log;
 
 import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.vuforia.Matrix34F;
-import com.vuforia.Tool;
-import com.vuforia.Vec3F;
 
-import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
-import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
-import org.opencv.android.Utils;
-import org.opencv.core.Mat;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 
 import ftc.vision.BeaconColorResult;
 import ftc.vision.BeaconProcessor;
@@ -85,9 +69,17 @@ public class DesignosaursAuto extends LinearOpMode {
 
 		waitForStart();
 
-		robot.driveStraightFeet(4, 0.5);
+		robot.setDrivePower(1.0);
+		while(opModeIsActive()) {
+			double distance = robot.getDistance();
 
-		return;
+			Log.i("DesignosaursAuto", String.valueOf(distance));
+
+			if(distance >= 2)
+				robot.setDrivePower(0);
+		}
+
+		/*
 
 		buttonPusherManager.setState(buttonPusherManager.STATE_HOMING);
 		beacons.activate();
@@ -236,6 +228,8 @@ public class DesignosaursAuto extends LinearOpMode {
 
 			ticksInState++;
 		}
+
+		*/
 	}
 
 	private void setState(byte newState) {
