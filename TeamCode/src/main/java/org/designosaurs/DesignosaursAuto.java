@@ -33,6 +33,7 @@ import org.opencv.android.OpenCVLoader;
 public class DesignosaursAuto extends LinearOpMode {
 	private DesignosaursHardware robot = new DesignosaursHardware();
 	private BeaconProcessor beaconProcessor = new BeaconProcessor();
+	private ButtonPusherManager buttonPusherManager = new ButtonPusherManager(robot);
 
 	private final boolean OBFUSCATE_MIDDLE = true;
 
@@ -42,28 +43,21 @@ public class DesignosaursAuto extends LinearOpMode {
 
 	private static final double DRIVE_POWER = 0.2;
 	private static final double SLOW_DOWN_AT = 3000;
-	private static final double BUTTON_PUSHER_POWER = 0.2;
-	private static final double BUTTON_PUSHER_MOVEMENT_THRESHOLD = 3;
-	private static final double BUTTON_PUSHER_TARGET_IDLE_POSITION = DesignosaursHardware.COUNTS_PER_REVOLUTION * 0.5;
-	private static final double BUTTON_PUSHER_THRESHOLD = 1000;
-	private static final int BEACON_ALIGNMENT_TOLERANCE = 200;
+	private static final int BEACON_ALIGNMENT_TOLERANCE = 100;
 
 	/* State Machine Options */
-	private final byte STATE_RETRACTING_PLACER = 0;
-	private final byte STATE_SEARCHING = 1;
-	private final byte STATE_ALIGNING_WITH_BEACON = 2;
-	private final byte STATE_WAITING_FOR_PLACER = 3;
-	private final byte STATE_ROTATING_TOWARDS_GOAL = 4;
-	private final byte STATE_DRIVING_TOWARDS_GOAL = 5;
-	private final byte STATE_SCORING_IN_GOAL = 6;
-	private final byte STATE_DRIVING_TO_RAMP = 7;
-	private final byte STATE_FINISHED = 8;
+	private final byte STATE_SEARCHING = 0;
+	private final byte STATE_ALIGNING_WITH_BEACON = 1;
+	private final byte STATE_WAITING_FOR_PLACER = 2;
+	private final byte STATE_ROTATING_TOWARDS_GOAL = 3;
+	private final byte STATE_DRIVING_TOWARDS_GOAL = 4;
+	private final byte STATE_SCORING_IN_GOAL = 5;
+	private final byte STATE_DRIVING_TO_RAMP = 6;
+	private final byte STATE_FINISHED = 7;
 
 	/* Current State */
-	private byte autonomousState = STATE_RETRACTING_PLACER;
-	private double lastButtonPusherPosition = 0;
+	private byte autonomousState = STATE_SEARCHING;
 	private int ticksInState = 0;
-	private int ticksRunning = 0;
 	private BeaconColorResult lastBeaconColor;
 	private BeaconColorResult.BeaconColor targetColor;
 
@@ -90,17 +84,15 @@ public class DesignosaursAuto extends LinearOpMode {
 		OpenCVLoader.initDebug();
 
 		waitForStart();
+
+		robot.driveStraightFeet(4, 0.5);
+
+		return;
+
+		buttonPusherManager.setState(buttonPusherManager.STATE_HOMING);
 		beacons.activate();
 
-		/* Current State */
-		ArrayList<Double> lastButtonPusherPositions = new ArrayList<>(10);
-		for(int i = 1; i <= 300; i++)
-			lastButtonPusherPositions.add(100.0);
-
-		robot.buttonPusher.setPower(-BUTTON_PUSHER_POWER);
-
 		byte beaconsFound = 0;
-		int ticksAdjustingButtonPusher = 0;
 
 		while(opModeIsActive()) {
 			Mat output = new Mat();
@@ -165,52 +157,9 @@ public class DesignosaursAuto extends LinearOpMode {
 			telemetry.addData("state", autonomousState);
 			telemetry.update();
 
-			double buttonPusherMovementSinceLastTick = robot.getAdjustedEncoderPosition(robot.buttonPusher) - lastButtonPusherPosition;
-			boolean buttonPusherIsStuck = false;
-			double buttonPusherMaxMovement = 0.0;
-
-			lastButtonPusherPosition = robot.getAdjustedEncoderPosition(robot.buttonPusher);
-
-			if(ticksRunning > 500) {
-				lastButtonPusherPositions.remove(0);
-				lastButtonPusherPositions.add(Math.abs(buttonPusherMovementSinceLastTick));
-
-				for(int i = 0; i < lastButtonPusherPositions.size(); i++) {
-					Double val = lastButtonPusherPositions.get(i);
-
-					if(val > buttonPusherMaxMovement)
-						buttonPusherMaxMovement = val;
-				}
-
-				if(buttonPusherMaxMovement < BUTTON_PUSHER_MOVEMENT_THRESHOLD)
-					buttonPusherIsStuck = true;
-			}
-
-			if(autonomousState != STATE_RETRACTING_PLACER && autonomousState != STATE_WAITING_FOR_PLACER) {
-				ticksAdjustingButtonPusher++;
-
-				double buttonPusherPositionDelta = robot.getAdjustedEncoderPosition(robot.buttonPusher) - BUTTON_PUSHER_TARGET_IDLE_POSITION;
-
-				if(Math.abs(buttonPusherPositionDelta) > BUTTON_PUSHER_THRESHOLD)
-					robot.buttonPusher.setPower(buttonPusherPositionDelta > 0 ? -BUTTON_PUSHER_POWER : BUTTON_PUSHER_POWER);
-				else
-					if(ticksAdjustingButtonPusher > 1500) {
-						robot.buttonPusher.setPower(0);
-
-						ticksAdjustingButtonPusher = 0;
-					}
-			}
+			buttonPusherManager.update();
 
 			switch(autonomousState) {
-				case STATE_RETRACTING_PLACER:
-					if(buttonPusherIsStuck) {
-						robot.buttonPusher.setPower(0);
-						robot.resetEncoder(robot.buttonPusher);
-						robot.setDrivePower(DRIVE_POWER);
-
-						setState(STATE_SEARCHING);
-					}
-				break;
 				case STATE_SEARCHING:
 					if(ticksInState > 1000) {
 						Log.i("relativePosition", String.valueOf(getRelativePosition()));
@@ -247,13 +196,9 @@ public class DesignosaursAuto extends LinearOpMode {
 					if(Math.abs(robot.getAdjustedEncoderPosition(robot.leftMotor)) >= 600) {
 						Log.i("DesignosaursAuto", "//// DEPLOYING ////");
 
-						ticksAdjustingButtonPusher = 0;
-						robot.buttonPusher.setPower(0.1);
-
 						robot.setDrivePower(0);
-						lastButtonPusherPositions.clear();
-						for(int i = 1; i <= 5; i++)
-							lastButtonPusherPositions.add(100.0);
+
+						buttonPusherManager.setState(buttonPusherManager.STATE_SCORING);
 
 						setState(STATE_WAITING_FOR_PLACER);
 					} else {
@@ -261,23 +206,14 @@ public class DesignosaursAuto extends LinearOpMode {
 					}
 				break;
 				case STATE_WAITING_FOR_PLACER:
-					if(ticksInState > 30 || (buttonPusherIsStuck && ticksInState > 4)) {
+					if(buttonPusherManager.getState() != buttonPusherManager.STATE_SCORING) {
+
 						beaconsFound++;
 
-						centeredPos = Integer.MAX_VALUE;
-
-						/*
-						if(beaconsFound < 2)
-							setState(STATE_SEARCHING);
-						else
+						if(beaconsFound == 2)
 							setState(STATE_ROTATING_TOWARDS_GOAL);
-						*/
-
-						lastButtonPusherPositions.clear();
-						for(int i = 1; i <= 300; i++)
-							lastButtonPusherPositions.add(100.0);
-
-						robot.buttonPusher.setPower(0);
+						else
+							setState(STATE_SEARCHING);
 					}
 				break;
 				case STATE_ROTATING_TOWARDS_GOAL:
@@ -294,11 +230,11 @@ public class DesignosaursAuto extends LinearOpMode {
 				break;
 				case STATE_DRIVING_TO_RAMP:
 					robot.driveStraightFeet(3, DRIVE_POWER);
-				break;
+
+					setState(STATE_FINISHED);
 			}
 
 			ticksInState++;
-			ticksRunning++;
 		}
 	}
 

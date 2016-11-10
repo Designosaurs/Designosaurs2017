@@ -107,7 +107,7 @@ public class DesignosaursHardware {
 		resetEncoder(rightMotor);
 	}
 
-	public double getAdjustedEncoderPosition(DcMotor motor) {
+	public int getAdjustedEncoderPosition(DcMotor motor) {
 		return motor.getCurrentPosition() - encoderOffsets.get(motor.hashCode());
 	}
 
