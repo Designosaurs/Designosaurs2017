@@ -53,11 +53,11 @@ public class VuforiaLocalizerImplSubclass extends VuforiaLocalizerImpl {
 
 	public VuforiaLocalizerImplSubclass(VuforiaLocalizer.Parameters parameters) {
 		super(parameters);
-		stopAR();
-		clearGlSurface();
+//		stopAR();
+//		clearGlSurface();
 
 		this.vuforiaCallback = new VuforiaCallbackSubclass();
-		startAR();
+//		startAR();
 
 		// Optional: set the pixel format(s) that you want to have in the callback
 		Vuforia.setFrameFormat(PIXEL_FORMAT.RGB565, true);
