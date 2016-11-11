@@ -16,8 +16,8 @@ public class DesignosaursTeleOp extends LinearOpMode {
 
 		robot.init(hardwareMap);
 
-		telemetry.addData("_", "Designosaurs 2017");
-		telemetry.addData("_", "Ready to start!");
+		telemetry.addData("00", "Designosaurs 2017");
+		telemetry.addData("00", "Ready to start!");
 		telemetry.update();
 
 		waitForStart();
@@ -36,8 +36,10 @@ public class DesignosaursTeleOp extends LinearOpMode {
 				robot.leftMotor.setPower(left);
 				robot.rightMotor.setPower(right);
 
-				telemetry.addData("left", "Left pwr: %.2f", left);
-				telemetry.addData("right", "Right pwr: %.2f", right);
+				telemetry.addData("00", "L power:   " + String.valueOf(left));
+				telemetry.addData("01", "L encoder: " + String.valueOf(robot.leftMotor.getCurrentPosition()));
+				telemetry.addData("02", "R power:   " + String.valueOf(right));
+				telemetry.addData("03", "R encoder: " + String.valueOf(robot.rightMotor.getCurrentPosition()));
 
 				telemetry.update();
 			}
