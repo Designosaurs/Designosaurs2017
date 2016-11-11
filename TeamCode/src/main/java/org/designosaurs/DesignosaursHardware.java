@@ -15,10 +15,8 @@ public class DesignosaursHardware {
 	public DcMotor buttonPusher = null;
 
 	public static final int COUNTS_PER_REVOLUTION = 2880;
-	public static final int COUNTS_PER_FOOT = 5760;
-
-	private static final int MIN_DRIFT_CORRECTION = COUNTS_PER_REVOLUTION / 10;
-	private static final double DRIFT_CORRECTION_FACTOR = 0.95;
+	public static final int COUNTS_PER_ROTATION = 9044;
+	public static final int COUNTS_PER_FOOT = 2128;
 
 	private HardwareMap hwMap = null;
 	private ElapsedTime period = new ElapsedTime();
@@ -80,7 +78,46 @@ public class DesignosaursHardware {
 	}
 
 	public double getDistance() {
-		return (getAdjustedEncoderPosition(leftMotor) + getAdjustedEncoderPosition(rightMotor)) / 2 * COUNTS_PER_FOOT;
+		return ((double) (getAdjustedEncoderPosition(leftMotor) + getAdjustedEncoderPosition(rightMotor))) / (2 * COUNTS_PER_FOOT);
+	}
+
+	public void goStraight(double feet, double power) {
+		feet = Math.abs(feet);
+		setDrivePower(power);
+
+		while(Math.abs(getDistance()) < feet)
+			try {
+				Thread.sleep(50);
+			} catch(Exception e) {
+				return;
+			}
+
+		setDrivePower(0);
+	}
+
+	public void turn(double degrees, double power) {
+		DcMotor primaryMotor, secondaryMotor;
+
+		resetEncoder(leftMotor);
+		resetEncoder(rightMotor);
+
+		primaryMotor = degrees > 0 ? rightMotor : leftMotor;
+		secondaryMotor = degrees > 0 ? leftMotor : rightMotor;
+
+		primaryMotor.setPower(power);
+		secondaryMotor.setPower(-power);
+
+		while(getAdjustedEncoderPosition(primaryMotor) <= ((degrees / 360) * COUNTS_PER_ROTATION))
+			try {
+				Log.i("DesignosaursAuto", "Current position: " + String.valueOf(getAdjustedEncoderPosition(primaryMotor)));
+				Log.i("DesignosaursAuto", "Desired position: " + String.valueOf((degrees / 360) * COUNTS_PER_ROTATION));
+
+				Thread.sleep(50);
+			} catch(Exception e) {
+				return;
+			}
+
+		setDrivePower(0);
 	}
 
 	public int getAdjustedEncoderPosition(DcMotor motor) {

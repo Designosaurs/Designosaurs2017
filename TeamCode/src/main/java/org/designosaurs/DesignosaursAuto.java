@@ -69,15 +69,7 @@ public class DesignosaursAuto extends LinearOpMode {
 
 		waitForStart();
 
-		robot.setDrivePower(1.0);
-		while(opModeIsActive()) {
-			double distance = robot.getDistance();
-
-			Log.i("DesignosaursAuto", String.valueOf(distance));
-
-			if(distance >= 2)
-				robot.setDrivePower(0);
-		}
+		robot.turn(90, 0.4);
 
 		/*
 

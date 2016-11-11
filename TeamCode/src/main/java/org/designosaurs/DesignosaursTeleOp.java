@@ -8,6 +8,7 @@ public class DesignosaursTeleOp extends LinearOpMode {
 	private DesignosaursHardware robot = new DesignosaursHardware();
 
 	private static final double JOYSTICK_DEADBAND = 0.2;
+	private static final double DRIVE_POWER = 0.2;
 
 	@Override
 	public void runOpMode() throws InterruptedException {
@@ -33,8 +34,8 @@ public class DesignosaursTeleOp extends LinearOpMode {
 				right = 0;
 
 			if(DesignosaursHardware.hardwareEnabled) {
-				robot.leftMotor.setPower(left);
-				robot.rightMotor.setPower(right);
+				robot.leftMotor.setPower(left * DRIVE_POWER);
+				robot.rightMotor.setPower(right * DRIVE_POWER);
 
 				telemetry.addData("00", "L power:   " + String.valueOf(left));
 				telemetry.addData("01", "L encoder: " + String.valueOf(robot.leftMotor.getCurrentPosition()));
