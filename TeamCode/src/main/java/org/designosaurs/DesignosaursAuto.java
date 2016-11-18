@@ -113,6 +113,7 @@ public class DesignosaursAuto extends LinearOpMode {
 		waitForStart();
 
 		buttonPusherManager.start();
+		buttonPusherManager.setStatus(ButtonPusherManager.STATE_HOMING);
 		beacons.activate();
 
 		byte beaconsFound = 0;
@@ -185,8 +186,8 @@ public class DesignosaursAuto extends LinearOpMode {
 
 					updateRunningState();
 
-					robot.goStraight(5, FAST_DRIVE_POWER);
-					robot.turn(45, TURN_POWER);
+					robot.goStraight(2, FAST_DRIVE_POWER);
+					robot.turn(30, TURN_POWER);
 					robot.goStraight(0.5, FAST_DRIVE_POWER);
 
 					setState(STATE_SEARCHING);
@@ -241,7 +242,7 @@ public class DesignosaursAuto extends LinearOpMode {
 
 						robot.setDrivePower(0);
 
-						buttonPusherManager.setState(buttonPusherManager.STATE_SCORING);
+						buttonPusherManager.setStatus(ButtonPusherManager.STATE_SCORING);
 
 						setState(STATE_WAITING_FOR_PLACER);
 					} else {
@@ -251,7 +252,7 @@ public class DesignosaursAuto extends LinearOpMode {
 				case STATE_WAITING_FOR_PLACER:
 					stateMessage = "Waiting for placer to deploy.";
 
-					if(buttonPusherManager.getState() != buttonPusherManager.STATE_SCORING) {
+					if(buttonPusherManager.getStatus() != ButtonPusherManager.STATE_SCORING) {
 
 						beaconsFound++;
 

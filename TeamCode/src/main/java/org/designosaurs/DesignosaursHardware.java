@@ -50,8 +50,8 @@ public class DesignosaursHardware {
 			resetEncoder(leftMotor);
 			resetEncoder(rightMotor);
 
-			leftMotor.setPower(-power);
-			rightMotor.setPower(-power);
+			leftMotor.setPower(power);
+			rightMotor.setPower(power);
 		}
 	}
 
