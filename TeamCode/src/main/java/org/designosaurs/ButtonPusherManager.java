@@ -8,8 +8,8 @@ public class ButtonPusherManager extends Thread {
     /* Configuration */
     private static final double POWER = 0.2;
     private static final int MOVEMENT_THRESHOLD = 3;
-    private static final double TARGET_IDLE_POSITION = DesignosaursHardware.COUNTS_PER_REVOLUTION * 0.25;
-    private static final double AT_BASE_TOLERANCE = 100;
+    private static final double TARGET_IDLE_POSITION = DesignosaursHardware.COUNTS_PER_REVOLUTION * 0.5;
+    private static final double AT_BASE_TOLERANCE = 200;
     private static final double EXTEND_MAX = DesignosaursHardware.COUNTS_PER_REVOLUTION;
 
     /* Available states */
@@ -20,23 +20,22 @@ public class ButtonPusherManager extends Thread {
 
     private byte state = -1;
     private int lastPosition = 0;
-    private ArrayList<Integer> positionHistory = new ArrayList<>(300);
+    private ArrayList<Integer> positionHistory = new ArrayList<>(20);
 
     private int ticks = 0;
     private int ticksInState = 0;
+    private boolean isRunning = true;
 
     private DesignosaursHardware robot;
+    private final String TAG = "ButtonPusherManager";
 
     ButtonPusherManager(DesignosaursHardware robot) {
         this.robot = robot;
     }
 
-    public void update() {
+    void update() {
         ticks++;
         ticksInState++;
-
-        Log.i("button pusher", String.valueOf(ticks));
-        Log.i("button pusher pos", String.valueOf(robot.getAdjustedEncoderPosition(robot.buttonPusher)));
 
         int movementDelta = robot.getAdjustedEncoderPosition(robot.buttonPusher) - lastPosition;
         int maxRecentMovement = 0;
@@ -45,8 +44,8 @@ public class ButtonPusherManager extends Thread {
         lastPosition = robot.getAdjustedEncoderPosition(robot.buttonPusher);
 
         if(ticks > 20) {
-            positionHistory.add(Math.abs(movementDelta));
             positionHistory.remove(0);
+            positionHistory.add(Math.abs(movementDelta));
 
             for(int i = 0; i < positionHistory.size(); i++) {
                 Integer val = positionHistory.get(i);
@@ -76,7 +75,7 @@ public class ButtonPusherManager extends Thread {
 
                     setStatus(STATE_AT_BASE);
                 } else
-                    robot.buttonPusher.setPower(buttonPusherPositionDelta > 0 ? POWER : -POWER);
+                    robot.buttonPusher.setPower(robot.getAdjustedEncoderPosition(robot.buttonPusher) <= TARGET_IDLE_POSITION ? POWER : -POWER);
             break;
             case STATE_SCORING:
                 if(robot.getAdjustedEncoderPosition(robot.buttonPusher) >= EXTEND_MAX || isStuck)
@@ -86,12 +85,12 @@ public class ButtonPusherManager extends Thread {
 
     public void run() {
         try {
-            while(true) {
+            while(isRunning) {
                 update();
                 Thread.sleep(20);
             }
         } catch(InterruptedException e) {
-            Log.i("ButtonPusherManager", "Shutting down...");
+            Log.i(TAG, "Shutting down...");
         }
     }
 
@@ -99,28 +98,47 @@ public class ButtonPusherManager extends Thread {
         return state;
     }
 
+    public String getStatusMessage() {
+        switch(state) {
+            case STATE_HOMING:
+                return "homing...";
+            case STATE_AT_BASE:
+                return "at base";
+            case STATE_RETURNING_TO_BASE:
+                return "returning to base...";
+            case STATE_SCORING:
+                return "scoring...";
+        }
+
+        return "unknown";
+    }
+
     public void setStatus(byte state) {
-        Log.i("ButtonPusher", "*** SWITCHING STATES ***");
-        Log.i("ButtonPusher", "Previous state: " + this.state);
-        Log.i("ButtonPusher", "New state: " + state);
-        Log.i("ButtonPusher", "Time in state: " + ticksInState + " ticks");
+        Log.i(TAG, "*** SWITCHING STATES ***");
+        Log.i(TAG, "Previous state: " + this.state);
+        Log.i(TAG, "New state: " + state);
+        Log.i(TAG, "Time in state: " + ticksInState + " ticks");
 
         this.state = state;
 
         positionHistory.clear();
-        for(int i = 1; i <= 300; i++)
-            positionHistory.add(15);
+        for(int i = 1; i <= 25; i++)
+            positionHistory.add(5);
 
         switch(state) {
             case STATE_HOMING:
-                robot.buttonPusher.setPower(POWER);
+                robot.buttonPusher.setPower(-POWER);
             break;
             case STATE_SCORING:
-                robot.buttonPusher.setPower(-(POWER / 2));
+                robot.buttonPusher.setPower(POWER / 2);
                 positionHistory.clear();
 
                 for(int i = 1; i <= 5; i++)
                     positionHistory.add(5);
         }
+    }
+
+    public void shutdown() {
+        isRunning = false;
     }
 }

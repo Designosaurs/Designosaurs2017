@@ -28,7 +28,6 @@ public class DesignosaursTeleOp extends LinearOpMode {
 			right = -gamepad1.right_stick_y;
 			buttonPusher = -gamepad2.left_stick_y;
 
-
 			if(Math.abs(left) < JOYSTICK_DEADBAND)
 				left = 0;
 

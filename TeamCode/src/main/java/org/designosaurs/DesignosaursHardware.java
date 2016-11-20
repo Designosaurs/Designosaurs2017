@@ -33,10 +33,12 @@ public class DesignosaursHardware {
 			leftMotor = hwMap.dcMotor.get("left");
 			rightMotor = hwMap.dcMotor.get("right");
 			buttonPusher = hwMap.dcMotor.get("buttonPusher");
-			leftMotor.setDirection(DcMotor.Direction.REVERSE);
 
+			leftMotor.setDirection(DcMotor.Direction.REVERSE);
 			leftMotor.setPower(0);
 			rightMotor.setPower(0);
+
+			buttonPusher.setDirection(DcMotor.Direction.REVERSE);
 			buttonPusher.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
 			encoderOffsets.put(leftMotor.hashCode(), 0);

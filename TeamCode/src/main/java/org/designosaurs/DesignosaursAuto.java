@@ -8,7 +8,6 @@ import android.util.Log;
 
 import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.vuforia.Matrix34F;
 import com.vuforia.Tool;
 import com.vuforia.Vec3F;
@@ -29,7 +28,7 @@ import ftc.vision.BeaconColorResult;
 import ftc.vision.BeaconProcessor;
 
 @Autonomous(name = "Designosaurs Autonomous", group = "Auto")
-public class DesignosaursAuto extends LinearOpMode {
+public class DesignosaursAuto extends DesignosaursOpMode {
 	private DesignosaursHardware robot = new DesignosaursHardware();
 	private BeaconProcessor beaconProcessor = new BeaconProcessor();
 	private ButtonPusherManager buttonPusherManager = new ButtonPusherManager(robot);
@@ -78,6 +77,7 @@ public class DesignosaursAuto extends LinearOpMode {
 		telemetry.addLine(stateMessage);
 		telemetry.addLine("");
 		telemetry.addLine("State: " + String.valueOf(autonomousState));
+		telemetry.addLine("Button pusher: " + buttonPusherManager.getStatusMessage());
 		telemetry.addLine("Ticks in state: " + String.valueOf(ticksInState));
 		telemetry.update();
 	}
@@ -213,8 +213,8 @@ public class DesignosaursAuto extends LinearOpMode {
 								lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), output, false).getResult();
 								targetColor = (imageName.equals("wheels") || imageName.equals("legos")) ? BeaconColorResult.BeaconColor.BLUE : BeaconColorResult.BeaconColor.RED;
 
-								Log.i("DesignosaursAuto", "*** BEACON FOUND ***");
-								Log.i("DesignosaursAuto", "Target color: " + (targetColor == BeaconColorResult.BeaconColor.BLUE ? "Blue" : "Red"));
+								Log.i(TAG, "*** BEACON FOUND ***");
+								Log.i(TAG, "Target color: " + (targetColor == BeaconColorResult.BeaconColor.BLUE ? "Blue" : "Red"));
 
 								robot.setDrivePower((lastBeaconColor.getLeftColor() == targetColor) ? -DRIVE_POWER * 0.5 : DRIVE_POWER * 0.5);
 								robot.resetEncoder(robot.leftMotor);
@@ -222,7 +222,7 @@ public class DesignosaursAuto extends LinearOpMode {
 
 								setState(STATE_ALIGNING_WITH_BEACON);
 							} else
-								Log.w("DesignosaursAuto", "Beacon is seen, but failed to transfer data to OpenCV.");
+								Log.w(TAG, "Beacon is seen, but failed to transfer data to OpenCV.");
 						} else {
 							stateMessage = "Aligning with beacon...";
 
@@ -238,7 +238,7 @@ public class DesignosaursAuto extends LinearOpMode {
 					stateMessage = "Positioning to deploy placer...";
 
 					if(Math.abs(robot.getAdjustedEncoderPosition(robot.leftMotor)) >= 600) {
-						Log.i("DesignosaursAuto", "//// DEPLOYING ////");
+						Log.i(TAG, "//// DEPLOYING ////");
 
 						robot.setDrivePower(0);
 
@@ -246,7 +246,7 @@ public class DesignosaursAuto extends LinearOpMode {
 
 						setState(STATE_WAITING_FOR_PLACER);
 					} else {
-						Log.i("DesignosaursAuto", "Aligning... " + ticksInState);
+						Log.i(TAG, "Aligning... " + ticksInState);
 					}
 				break;
 				case STATE_WAITING_FOR_PLACER:
@@ -285,10 +285,16 @@ public class DesignosaursAuto extends LinearOpMode {
 		}
 	}
 
+	@Override
+	public void onStop() {
+		Log.i(TAG, "*** SHUTTING DOWN ***");
+		buttonPusherManager.shutdown();
+	}
+
 	private void setState(byte newState) {
-		Log.i("DesignosaursAuto", "*** SWITCHING STATES ***");
-		Log.i("DesignosaursAuto", "New state: " + String.valueOf(newState));
-		Log.i("DesignosaursAuto", "Time in previous state: " + String.valueOf(ticksInState));
+		Log.i(TAG, "*** SWITCHING STATES ***");
+		Log.i(TAG, "New state: " + String.valueOf(newState));
+		Log.i(TAG, "Time in previous state: " + String.valueOf(ticksInState));
 
 		autonomousState = newState;
 		ticksInState = 0;
