@@ -111,9 +111,6 @@ public class DesignosaursHardware {
 
 		while(getAdjustedEncoderPosition(primaryMotor) <= ((degrees / 360) * COUNTS_PER_ROTATION))
 			try {
-				Log.i("DesignosaursAuto", "Current position: " + String.valueOf(getAdjustedEncoderPosition(primaryMotor)));
-				Log.i("DesignosaursAuto", "Desired position: " + String.valueOf((degrees / 360) * COUNTS_PER_ROTATION));
-
 				Thread.sleep(50);
 			} catch(Exception e) {
 				return;

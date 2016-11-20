@@ -64,6 +64,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private String stateMessage = "Starting...";
 
 	private static String TAG = "DesignosaursAuto";
+	private long lastTelemetryUpdate = 0;
 
 	private void setInitState(String state) {
 		telemetry.clear();
@@ -72,11 +73,15 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		telemetry.update();
 	}
 
-	public void updateRunningState() {
+	private void updateRunningState() {
+		if(System.currentTimeMillis() - lastTelemetryUpdate < 250)
+			return;
+
+		lastTelemetryUpdate = System.currentTimeMillis();
 		telemetry.clear();
 		telemetry.addLine(stateMessage);
 		telemetry.addLine("");
-		telemetry.addLine("State: " + String.valueOf(autonomousState));
+		telemetry.addLine("State: " + getStateMessage());
 		telemetry.addLine("Button pusher: " + buttonPusherManager.getStatusMessage());
 		telemetry.addLine("Ticks in state: " + String.valueOf(ticksInState));
 		telemetry.update();
@@ -84,14 +89,10 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 	@Override
 	public void runOpMode() throws InterruptedException {
-		boolean isFirstRun = true;
-
 		setInitState("Configuring hardware...");
-
 		robot.init(hardwareMap);
 
 		setInitState("Initializing vuforia...");
-
 		VuforiaLocalizer.Parameters params = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
 		params.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
 		params.vuforiaLicenseKey = VUFORIA_LICENCE_KEY;
@@ -139,12 +140,12 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					Vector2 lowerLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(-100, 142, 0))); // -127, -92, 0
 					Vector2 lowerRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(100, 142, 0))); // 127, -92, 0
 
+					Log.i(TAG, String.valueOf(center.X));
+					centeredPos = center.X;
+
 					if(vuforia.rgb != null) {
 						Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
 						bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
-
-						centeredPos = center.X;
-						isFirstRun = false;
 
 						Vector2 start = new Vector2(Math.max(0, Math.min(upperLeft.X, lowerLeft.X)), Math.min(bm.getHeight()-1,Math.max(0, Math.min(upperLeft.Y, upperRight.Y))));
 						Vector2 end = new Vector2(Math.max(0, Math.max(lowerRight.X, upperRight.X)), Math.min(bm.getHeight()-1,Math.max(0, Math.max(lowerLeft.Y, lowerRight.Y))));
@@ -171,12 +172,10 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 							havePixelData = false;
 							//e.printStackTrace();
 						}
-					}
+					} else
+						havePixelData = false;
 				}
 			}
-
-			if(isFirstRun)
-				centeredPos = Integer.MAX_VALUE;
 
 			buttonPusherManager.update();
 
@@ -194,14 +193,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 				break;
 				case STATE_SEARCHING:
 					if(ticksInState > 1000) {
-						stateMessage = "Searching for beacon...";
-
-						if(Math.abs(getRelativePosition()) > SLOW_DOWN_AT)  {
-							stateMessage = "Slowing down and searching for beacon.";
-
-							robot.setDrivePower(0.6 * DRIVE_POWER);
-						}
-
 						if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
 							stateMessage = "Analysing beacon data...";
 
@@ -223,15 +214,15 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 								setState(STATE_ALIGNING_WITH_BEACON);
 							} else
 								Log.w(TAG, "Beacon is seen, but failed to transfer data to OpenCV.");
-						} else {
-							stateMessage = "Aligning with beacon...";
+						} else
+							if(Math.abs(getRelativePosition()) < SLOW_DOWN_AT) {
+								stateMessage = "Beacon seen, centering...";
 
-							if(Math.abs(getRelativePosition()) < SLOW_DOWN_AT)
 								if(getRelativePosition() > 0)
 									robot.setDrivePower(DRIVE_POWER * 0.5);
 								else
 									robot.setDrivePower(DRIVE_POWER * -0.5);
-						}
+							}
 					}
 				break;
 				case STATE_ALIGNING_WITH_BEACON:
@@ -296,8 +287,37 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		Log.i(TAG, "New state: " + String.valueOf(newState));
 		Log.i(TAG, "Time in previous state: " + String.valueOf(ticksInState));
 
+		switch(newState) {
+			case STATE_SEARCHING:
+				robot.setDrivePower(DRIVE_POWER);
+				stateMessage = "Searching for beacon...";
+		}
+
 		autonomousState = newState;
 		ticksInState = 0;
+	}
+
+	private String getStateMessage() {
+		switch(autonomousState) {
+			case STATE_INITIAL_POSITIONING:
+				return "initial positioning";
+			case STATE_SEARCHING:
+				return "searching";
+			case STATE_ALIGNING_WITH_BEACON:
+				return "aligning with desired color";
+			case STATE_WAITING_FOR_PLACER:
+				return "waiting for placer";
+			case STATE_ROTATING_TOWARDS_GOAL:
+				return "rotating towards goal";
+			case STATE_SCORING_IN_GOAL:
+				return "scoring in goal";
+			case STATE_DRIVING_TO_RAMP:
+				return "driving to ramp";
+			case STATE_FINISHED:
+				return "finished";
+		}
+
+		return "unknown";
 	}
 
 	private int getRelativePosition() {
