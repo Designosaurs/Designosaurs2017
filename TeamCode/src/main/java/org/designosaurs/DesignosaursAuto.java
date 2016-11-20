@@ -50,11 +50,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private final byte STATE_SEARCHING = 1;
 	private final byte STATE_ALIGNING_WITH_BEACON = 2;
 	private final byte STATE_WAITING_FOR_PLACER = 3;
-	private final byte STATE_ROTATING_TOWARDS_GOAL = 4;
-	private final byte STATE_DRIVING_TOWARDS_GOAL = 5;
-	private final byte STATE_SCORING_IN_GOAL = 6;
-	private final byte STATE_DRIVING_TO_RAMP = 7;
-	private final byte STATE_FINISHED = 8;
+	private final byte STATE_FINISHED = 4;
 
 	/* Current State */
 	private byte autonomousState = STATE_INITIAL_POSITIONING;
@@ -241,27 +237,13 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						centeredPos = Integer.MAX_VALUE;
 
 						if(beaconsFound == 2)
-							setState(STATE_ROTATING_TOWARDS_GOAL);
-						else
-							setState(STATE_SEARCHING);
-					}
-				break;
-				case STATE_ROTATING_TOWARDS_GOAL:
-					robot.rotateToPosition(45, TURN_POWER);
-					setState(STATE_DRIVING_TOWARDS_GOAL);
-				break;
-				case STATE_DRIVING_TOWARDS_GOAL:
-					robot.goStraight(4, FAST_DRIVE_POWER);
-					setState(STATE_SCORING_IN_GOAL);
-				break;
-				case STATE_SCORING_IN_GOAL:
-					// ...
-					setState(STATE_DRIVING_TO_RAMP);
-				break;
-				case STATE_DRIVING_TO_RAMP:
-					robot.goStraight(3, FAST_DRIVE_POWER);
+							setState(STATE_FINISHED);
+						else {
+							robot.goStraight(1, FAST_DRIVE_POWER);
 
-					setState(STATE_FINISHED);
+							setState(STATE_SEARCHING);
+						}
+					}
 			}
 
 			ticksInState++;
@@ -285,6 +267,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			case STATE_SEARCHING:
 				robot.setDrivePower(DRIVE_POWER);
 				stateMessage = "Searching for beacon...";
+			break;
+			case STATE_FINISHED:
+				stateMessage = "Done.";
 		}
 
 		autonomousState = newState;
@@ -301,14 +286,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 				return "aligning with desired color";
 			case STATE_WAITING_FOR_PLACER:
 				return "waiting for placer";
-			case STATE_ROTATING_TOWARDS_GOAL:
-				return "rotating towards goal";
-			case STATE_DRIVING_TOWARDS_GOAL:
-				return "driving towards goal";
-			case STATE_SCORING_IN_GOAL:
-				return "scoring in goal";
-			case STATE_DRIVING_TO_RAMP:
-				return "driving to ramp";
 			case STATE_FINISHED:
 				return "finished";
 		}
