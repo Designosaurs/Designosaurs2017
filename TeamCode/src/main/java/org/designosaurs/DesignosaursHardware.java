@@ -49,12 +49,14 @@ public class DesignosaursHardware {
 
 	public void setDrivePower(double power) {
 		if(hardwareEnabled) {
-			resetEncoder(leftMotor);
-			resetEncoder(rightMotor);
-
 			leftMotor.setPower(power);
 			rightMotor.setPower(power);
 		}
+	}
+
+	public void resetDriveEncoders() {
+		resetEncoder(leftMotor);
+		resetEncoder(rightMotor);
 	}
 
 	public void waitForTick(long periodMs) throws InterruptedException {
@@ -86,6 +88,7 @@ public class DesignosaursHardware {
 	public void goStraight(double feet, double power) {
 		feet = Math.abs(feet);
 		setDrivePower(power);
+		resetDriveEncoders();
 
 		while(Math.abs(getDistance()) < feet)
 			try {
@@ -95,6 +98,7 @@ public class DesignosaursHardware {
 			}
 
 		setDrivePower(0);
+		resetDriveEncoders();
 	}
 
 	public void turn(double degrees, double power) {
@@ -117,6 +121,7 @@ public class DesignosaursHardware {
 			}
 
 		setDrivePower(0);
+		resetDriveEncoders();
 	}
 
 	public int getAdjustedEncoderPosition(DcMotor motor) {

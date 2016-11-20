@@ -34,18 +34,18 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private ButtonPusherManager buttonPusherManager = new ButtonPusherManager(robot);
 
 	private final boolean OBFUSCATE_MIDDLE = true;
-
-	private int centeredPos = Integer.MAX_VALUE;
-
 	private final String VUFORIA_LICENCE_KEY = "ATwI0oz/////AAAAGe9HyiYVEU6pmTFAb65tOfUrioTxlZtITHRLN1h3wllaw67kJsUOHwPVDsCN0vxiKy/9Qi9NnjpkVfUnn0gwIHyKJgTYkG7+dCaJtFJlY94qa1YPCy0y4rwhVQFkDkcaCiNoiS7ZSU5KLeIABF4Gvz9qYwJJtwxWGp4fbjyu+arTOUw160+Fg5XMjoftS8FAQPx4wF33sVdGw+CYX0fHdwQzOyN0PpIwBQ9xvb8e1c76FoHF0YUZyV/q0XeR97nRj1TfnesPc+v7Z72SEDCXAAdVVS6L9u/mVAxq4zTaXsdGcVsqHeaouoGmQ/1Ey/YYShqHaRZXWwC4GsgaxO9tCkWNH+hTjFZA2pgvKVl5HmLR";
 
+	/* Configuration */
 	private static final double FAST_DRIVE_POWER = 1.0;
 	private static final double TURN_POWER = 0.4;
-	private static final double DRIVE_POWER = 0.2;
+	private static final double DRIVE_POWER = 0.4;
 	private static final double SLOW_DOWN_AT = 3000;
 	private static final int BEACON_ALIGNMENT_TOLERANCE = 100;
+	private static final int SHIFT_TO_ALIGN_COUNTS = 600;
+	public static final boolean SAVE_IMAGES = false;
 
-	/* State Machine Options */
+	/* State Machine */
 	private final byte STATE_INITIAL_POSITIONING = 0;
 	private final byte STATE_SEARCHING = 1;
 	private final byte STATE_ALIGNING_WITH_BEACON = 2;
@@ -59,11 +59,11 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	/* Current State */
 	private byte autonomousState = STATE_INITIAL_POSITIONING;
 	private int ticksInState = 0;
-	private BeaconColorResult lastBeaconColor;
-	private BeaconColorResult.BeaconColor targetColor;
 	private String stateMessage = "Starting...";
+	private byte beaconsFound = 0;
 
 	private static String TAG = "DesignosaursAuto";
+	private int centeredPos = Integer.MAX_VALUE;
 	private long lastTelemetryUpdate = 0;
 
 	private void setInitState(String state) {
@@ -83,7 +83,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		telemetry.addLine("");
 		telemetry.addLine("State: " + getStateMessage());
 		telemetry.addLine("Button pusher: " + buttonPusherManager.getStatusMessage());
-		telemetry.addLine("Ticks in state: " + String.valueOf(ticksInState));
+		telemetry.addLine("Time in state: " + String.valueOf(ticksInState));
+		telemetry.addLine("Beacons scored: " + String.valueOf(beaconsFound));
 		telemetry.update();
 	}
 
@@ -117,12 +118,10 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		buttonPusherManager.setStatus(ButtonPusherManager.STATE_HOMING);
 		beacons.activate();
 
-		byte beaconsFound = 0;
-
 		while(opModeIsActive()) {
 			Mat output = new Mat();
 			String imageName = "";
-			boolean havePixelData = true;
+			boolean havePixelData = false;
 
 			for(VuforiaTrackable beac : beacons) {
 				OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) beac.getListener()).getRawPose();
@@ -140,44 +139,45 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					Vector2 lowerLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(-100, 142, 0))); // -127, -92, 0
 					Vector2 lowerRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(100, 142, 0))); // 127, -92, 0
 
-					Log.i(TAG, String.valueOf(center.X));
-					centeredPos = center.X;
+					centeredPos = center.x;
 
-					if(vuforia.rgb != null) {
-						Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
-						bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
+					if(vuforia.rgb == null)
+						continue;
 
-						Vector2 start = new Vector2(Math.max(0, Math.min(upperLeft.X, lowerLeft.X)), Math.min(bm.getHeight()-1,Math.max(0, Math.min(upperLeft.Y, upperRight.Y))));
-						Vector2 end = new Vector2(Math.max(0, Math.max(lowerRight.X, upperRight.X)), Math.min(bm.getHeight()-1,Math.max(0, Math.max(lowerLeft.Y, lowerRight.Y))));
+					Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
+					bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
 
-						try {
-							Bitmap a = Bitmap.createBitmap(bm, start.X, start.Y, Math.min(end.X, (1280 - start.X) > 0 ? 1280 - start.X : 50), Math.min(end.Y, (720 - start.Y) > 0 ? 720 - start.Y : 50));
+					Vector2 start = new Vector2(Math.max(0, Math.min(upperLeft.x, lowerLeft.x)), Math.min(bm.getHeight() - 1, Math.max(0, Math.min(upperLeft.y, upperRight.y))));
+					Vector2 end = new Vector2(Math.min(bm.getWidth(), Math.max(lowerRight.x, upperRight.x)), Math.min(bm.getHeight() - 1, Math.max(0, Math.max(lowerLeft.y, lowerRight.y))));
 
-							Bitmap resizedbitmap = DesignosaursUtils.resize(a, a.getWidth() / 2, a.getHeight() / 2);
-							resizedbitmap = DesignosaursUtils.rotate(resizedbitmap, 90);
+					if(end.x - start.x == 0 || end.y - start.y == 0)
+						continue;
 
-							if(OBFUSCATE_MIDDLE) {
-								Canvas canvas = new Canvas(resizedbitmap);
-								Paint paint = new Paint();
-								paint.setColor(Color.WHITE);
+					try {
+						Bitmap a = Bitmap.createBitmap(bm, start.x, start.y, end.x, end.y);
 
-								canvas.drawRect(resizedbitmap.getWidth() * 12 / 30, 0, resizedbitmap.getWidth() * 17 / 30, resizedbitmap.getHeight(), paint);
-							}
+						Bitmap resizedbitmap = DesignosaursUtils.resize(a, a.getWidth() / 2, a.getHeight() / 2);
+						resizedbitmap = DesignosaursUtils.rotate(resizedbitmap, 90);
 
-							Utils.bitmapToMat(resizedbitmap, output);
+						if(OBFUSCATE_MIDDLE) {
+							Canvas canvas = new Canvas(resizedbitmap);
+							Paint paint = new Paint();
+							paint.setColor(Color.WHITE);
 
-							FtcRobotControllerActivity.simpleController.setImage(resizedbitmap);
-							FtcRobotControllerActivity.simpleController.setImage2(bm);
-						} catch(IllegalArgumentException e) {
-							havePixelData = false;
-							//e.printStackTrace();
+							canvas.drawRect(resizedbitmap.getWidth() * 12 / 30, 0, resizedbitmap.getWidth() * 17 / 30, resizedbitmap.getHeight(), paint);
 						}
-					} else
-						havePixelData = false;
+
+						FtcRobotControllerActivity.simpleController.setImage(resizedbitmap);
+						FtcRobotControllerActivity.simpleController.setImage2(bm);
+
+						Utils.bitmapToMat(resizedbitmap, output);
+
+						havePixelData = true;
+					} catch(Exception e) {
+						//e.printStackTrace();
+					}
 				}
 			}
-
-			buttonPusherManager.update();
 
 			switch(autonomousState) {
 				case STATE_INITIAL_POSITIONING:
@@ -192,60 +192,53 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					setState(STATE_SEARCHING);
 				break;
 				case STATE_SEARCHING:
-					if(ticksInState > 1000) {
-						if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
-							stateMessage = "Analysing beacon data...";
+					if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
+						stateMessage = "Analysing beacon data...";
 
-							robot.setDrivePower(0.08);
+						robot.setDrivePower(0.07);
 
-							if(havePixelData) {
-								stateMessage = "Beacon found!";
+						if(havePixelData) {
+							stateMessage = "Beacon found!";
 
-								lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), output, false).getResult();
-								targetColor = (imageName.equals("wheels") || imageName.equals("legos")) ? BeaconColorResult.BeaconColor.BLUE : BeaconColorResult.BeaconColor.RED;
+							BeaconColorResult lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), output, SAVE_IMAGES).getResult();
+							BeaconColorResult.BeaconColor targetColor = (imageName.equals("wheels") || imageName.equals("legos")) ? BeaconColorResult.BeaconColor.BLUE : BeaconColorResult.BeaconColor.RED;
 
-								Log.i(TAG, "*** BEACON FOUND ***");
-								Log.i(TAG, "Target color: " + (targetColor == BeaconColorResult.BeaconColor.BLUE ? "Blue" : "Red"));
+							Log.i(TAG, "*** BEACON FOUND ***");
+							Log.i(TAG, "Target color: " + (targetColor == BeaconColorResult.BeaconColor.BLUE ? "Blue" : "Red"));
 
-								robot.setDrivePower((lastBeaconColor.getLeftColor() == targetColor) ? -DRIVE_POWER * 0.5 : DRIVE_POWER * 0.5);
-								robot.resetEncoder(robot.leftMotor);
-								robot.resetEncoder(robot.rightMotor);
+							robot.resetDriveEncoders();
+							robot.setDrivePower((lastBeaconColor.getLeftColor() == targetColor) ? -DRIVE_POWER * 0.5 : DRIVE_POWER * 0.5);
 
-								setState(STATE_ALIGNING_WITH_BEACON);
-							} else
-								Log.w(TAG, "Beacon is seen, but failed to transfer data to OpenCV.");
-						} else
-							if(Math.abs(getRelativePosition()) < SLOW_DOWN_AT) {
-								stateMessage = "Beacon seen, centering...";
+							setState(STATE_ALIGNING_WITH_BEACON);
+						}
+					} else
+						if(Math.abs(getRelativePosition()) < SLOW_DOWN_AT) {
+							stateMessage = "Beacon seen, centering (" + String.valueOf(getRelativePosition()) + ")...";
 
-								if(getRelativePosition() > 0)
-									robot.setDrivePower(DRIVE_POWER * 0.5);
-								else
-									robot.setDrivePower(DRIVE_POWER * -0.5);
-							}
-					}
+							if(getRelativePosition() > 0)
+								robot.setDrivePower(DRIVE_POWER * 0.5);
+							else
+								robot.setDrivePower(DRIVE_POWER * -0.5);
+						}
 				break;
 				case STATE_ALIGNING_WITH_BEACON:
 					stateMessage = "Positioning to deploy placer...";
 
-					if(Math.abs(robot.getAdjustedEncoderPosition(robot.leftMotor)) >= 600) {
+					if(Math.max(Math.abs(robot.getAdjustedEncoderPosition(robot.leftMotor)), Math.abs(robot.getAdjustedEncoderPosition(robot.rightMotor))) >= SHIFT_TO_ALIGN_COUNTS) {
 						Log.i(TAG, "//// DEPLOYING ////");
 
 						robot.setDrivePower(0);
-
 						buttonPusherManager.setStatus(ButtonPusherManager.STATE_SCORING);
 
 						setState(STATE_WAITING_FOR_PLACER);
-					} else {
-						Log.i(TAG, "Aligning... " + ticksInState);
 					}
 				break;
 				case STATE_WAITING_FOR_PLACER:
 					stateMessage = "Waiting for placer to deploy.";
 
 					if(buttonPusherManager.getStatus() != ButtonPusherManager.STATE_SCORING) {
-
 						beaconsFound++;
+						centeredPos = Integer.MAX_VALUE;
 
 						if(beaconsFound == 2)
 							setState(STATE_ROTATING_TOWARDS_GOAL);
@@ -273,6 +266,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 			ticksInState++;
 			updateRunningState();
+			robot.waitForTick(20);
 		}
 	}
 
@@ -309,6 +303,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 				return "waiting for placer";
 			case STATE_ROTATING_TOWARDS_GOAL:
 				return "rotating towards goal";
+			case STATE_DRIVING_TOWARDS_GOAL:
+				return "driving towards goal";
 			case STATE_SCORING_IN_GOAL:
 				return "scoring in goal";
 			case STATE_DRIVING_TO_RAMP:

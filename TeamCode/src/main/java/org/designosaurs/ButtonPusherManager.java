@@ -10,7 +10,7 @@ public class ButtonPusherManager extends Thread {
     private static final int MOVEMENT_THRESHOLD = 3;
     private static final double TARGET_IDLE_POSITION = DesignosaursHardware.COUNTS_PER_REVOLUTION * 0.5;
     private static final double AT_BASE_TOLERANCE = 200;
-    private static final double EXTEND_MAX = DesignosaursHardware.COUNTS_PER_REVOLUTION;
+    private static final double EXTEND_MAX = DesignosaursHardware.COUNTS_PER_REVOLUTION * 1.25;
 
     /* Available states */
     public static final byte STATE_HOMING = 0;
@@ -33,7 +33,7 @@ public class ButtonPusherManager extends Thread {
         this.robot = robot;
     }
 
-    void update() {
+    private void update() {
         ticks++;
         ticksInState++;
 
@@ -122,23 +122,24 @@ public class ButtonPusherManager extends Thread {
         this.state = state;
 
         positionHistory.clear();
-        for(int i = 1; i <= 25; i++)
-            positionHistory.add(5);
+        for(int i = 1; i <= 20; i++)
+            positionHistory.add(10);
 
         switch(state) {
             case STATE_HOMING:
                 robot.buttonPusher.setPower(-POWER);
             break;
             case STATE_SCORING:
-                robot.buttonPusher.setPower(POWER / 2);
+                robot.buttonPusher.setPower(POWER);
                 positionHistory.clear();
 
-                for(int i = 1; i <= 5; i++)
-                    positionHistory.add(5);
+                for(int i = 1; i <= 10; i++)
+                    positionHistory.add(10);
         }
     }
 
-    public void shutdown() {
+    void shutdown() {
         isRunning = false;
+        robot.buttonPusher.setPower(0);
     }
 }
