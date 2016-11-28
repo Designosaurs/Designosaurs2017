@@ -61,9 +61,6 @@ class DesignosaursHardware {
 	/*** Drive ***/
 
 	private double getDistance() {
-		Log.i("DesignosaursAuto", "L encoder val: " + getAdjustedEncoderPosition(leftMotor));
-		Log.i("DesignosaursAuto", "R encoder val: " + getAdjustedEncoderPosition(rightMotor));
-
 		return (double) (Math.max(getAdjustedEncoderPosition(leftMotor), getAdjustedEncoderPosition(rightMotor))) / COUNTS_PER_FOOT;
 	}
 
@@ -111,7 +108,7 @@ class DesignosaursHardware {
 
 		while(current <= target)
 			try {
-				current = Math.abs(getAdjustedEncoderPosition(primaryMotor));
+				current = Math.abs(getAdjustedEncoderPosition(primaryMotor)) >= 2 ? Math.abs(getAdjustedEncoderPosition(primaryMotor)) : Math.abs(getAdjustedEncoderPosition(secondaryMotor)) * 2;
 
 				adjustedPower = Math.abs(Math.floor(current / target)) < 10 ? power * 0.5: power;
 
