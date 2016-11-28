@@ -5,11 +5,11 @@ import java.util.ArrayList;
 
 public class ButtonPusherManager extends Thread {
 	/* Configuration */
-	private static final double POWER = 0.25;
-	private static final int MOVEMENT_THRESHOLD = 3;
+	private static final double POWER = 0.2;
+	private static final int MOVEMENT_THRESHOLD = 10;
 	private static final double TARGET_IDLE_POSITION = DesignosaursHardware.COUNTS_PER_REVOLUTION * 0.25;
 	private static final double AT_BASE_TOLERANCE = 50;
-	private static final double EXTEND_MAX = DesignosaursHardware.COUNTS_PER_REVOLUTION * 1.35;
+	private static final double EXTEND_MAX = 3800;
 
 	/* Available states */
 	public static final byte STATE_HOMING = 0;
@@ -42,7 +42,7 @@ public class ButtonPusherManager extends Thread {
 
 		lastPosition = robot.getAdjustedEncoderPosition(robot.buttonPusher);
 
-		if(ticks > 20) {
+		if(ticksInState > 20) {
 			positionHistory.remove(0);
 			positionHistory.add(Math.abs(movementDelta));
 
@@ -86,7 +86,7 @@ public class ButtonPusherManager extends Thread {
 		try {
 			while(isRunning) {
 				update();
-				Thread.sleep(20);
+				Thread.sleep(5);
 			}
 		} catch(InterruptedException e) {
 			Log.i(TAG, "Shutting down...");
@@ -121,7 +121,7 @@ public class ButtonPusherManager extends Thread {
 		this.state = state;
 
 		positionHistory.clear();
-		for(int i = 1; i <= 20; i++)
+		for(int i = 1; i <= 80; i++)
 			positionHistory.add(10);
 
 		switch(state) {
@@ -132,7 +132,7 @@ public class ButtonPusherManager extends Thread {
 				robot.setButtonPusherPower(POWER);
 				positionHistory.clear();
 
-				for(int i = 1; i <= 10; i++)
+				for(int i = 1; i <= 40; i++)
 					positionHistory.add(10);
 		}
 	}

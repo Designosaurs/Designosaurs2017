@@ -41,6 +41,12 @@ class DesignosaursHardware implements SensorEventListener {
 	DesignosaursHardware() {}
 
 	void init(HardwareMap hwMap) {
+		buttonPusher = hwMap.dcMotor.get("buttonPusher");
+
+		buttonPusher.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		buttonPusher.setDirection(DcMotor.Direction.REVERSE);
+		buttonPusher.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
 		if(hardwareEnabled) {
 			leftMotor = hwMap.dcMotor.get("left");
 			rightMotor = hwMap.dcMotor.get("right");
@@ -50,6 +56,7 @@ class DesignosaursHardware implements SensorEventListener {
 			leftMotor.setPower(0);
 			rightMotor.setPower(0);
 
+			buttonPusher.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 			buttonPusher.setDirection(DcMotor.Direction.REVERSE);
 			buttonPusher.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
@@ -77,8 +84,11 @@ class DesignosaursHardware implements SensorEventListener {
 
 	/*** Drive ***/
 
-	double getDistance() {
-		return ((double) (getAdjustedEncoderPosition(leftMotor) + getAdjustedEncoderPosition(rightMotor))) / (2 * COUNTS_PER_FOOT);
+	private double getDistance() {
+		Log.i("DesignosaursAuto", "L encoder val: " + getAdjustedEncoderPosition(leftMotor));
+		Log.i("DesignosaursAuto", "R encoder val: " + getAdjustedEncoderPosition(rightMotor));
+
+		return (double) (Math.max(getAdjustedEncoderPosition(leftMotor), getAdjustedEncoderPosition(rightMotor))) / COUNTS_PER_FOOT;
 	}
 
 	void setDrivePower(double power) {
@@ -102,7 +112,7 @@ class DesignosaursHardware implements SensorEventListener {
 
 		while(Math.abs(getDistance()) < feet)
 			try {
-				Thread.sleep(15);
+				Thread.sleep(1);
 			} catch(Exception e) {
 				return;
 			}
@@ -130,14 +140,14 @@ class DesignosaursHardware implements SensorEventListener {
 
 		while(current <= target)
 			try {
-				current = Math.max(Math.abs(getAdjustedEncoderPosition(primaryMotor)), Math.abs(getAdjustedEncoderPosition(secondaryMotor)));
+				current = Math.abs(getAdjustedEncoderPosition(primaryMotor));
 
 				adjustedPower = Math.abs(Math.floor(current / target)) < 10 ? power * 0.5: power;
 
 				primaryMotor.setPower(adjustedPower);
 				secondaryMotor.setPower(-adjustedPower);
 
-				Thread.sleep(5);
+				Thread.sleep(1);
 			} catch(Exception e) {
 				return;
 			}
@@ -158,7 +168,7 @@ class DesignosaursHardware implements SensorEventListener {
 
 	/*** Encoders ***/
 
-	int getRotationDegrees() {
+	private int getRotationDegrees() {
 		return (int) Math.round(Math.toDegrees(azimuth));
 	}
 
