@@ -125,6 +125,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			switch(status) {
 				case LoaderCallbackInterface.SUCCESS:
 					Log.i(TAG, "OpenCV loaded successfully!");
+				break;
 				default:
 					Log.i(TAG, "OpenCV load failure.");
 			}
@@ -133,7 +134,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 
 	@Override
-	public void runOpMode() throws InterruptedException {
+	public void runOpMode() {
 		setInitState("Configuring hardware...");
 		robot.init(hardwareMap);
 		appContext = hardwareMap.appContext;
@@ -160,7 +161,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			if(gamepad1.x || gamepad1.b)
 				updateTeamColor();
 
-			Thread.sleep(20);
+			robot.waitForTick(20);
 		}
 
 		buttonPusherManager.start();
@@ -218,8 +219,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 							canvas.drawRect(resizedbitmap.getWidth() * 12 / 30, 0, resizedbitmap.getWidth() * 17 / 30, resizedbitmap.getHeight(), paint);
 						}
 
-						FtcRobotControllerActivity.simpleController.setImage(resizedbitmap);
-						FtcRobotControllerActivity.simpleController.setImage2(bm);
+						//FtcRobotControllerActivity.simpleController.setImage(resizedbitmap);
+						//FtcRobotControllerActivity.simpleController.setImage2(bm);
 
 						Utils.bitmapToMat(resizedbitmap, output);
 

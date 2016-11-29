@@ -23,6 +23,7 @@ repositories {
 }
 apply from: 'build.release.gradle'
 dependencies {
+	compile "com.android.support:support-core-utils:25.0.1"
 	compile project(':openCVLibrary310')
 	compile files('src/main/jniLibs/nanohttpd-websocket-2.3.1.jar')
 }

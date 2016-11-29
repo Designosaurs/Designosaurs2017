@@ -69,10 +69,15 @@ class DesignosaursHardware implements SensorEventListener {
 		mSensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_UI);
 	}
 
-	void waitForTick(long periodMs) throws InterruptedException {
+	void waitForTick(long periodMs) {
 		long remaining = periodMs - (long) period.milliseconds();
 
-		if(remaining > 0) Thread.sleep(remaining);
+		if(remaining > 0)
+			try {
+				Thread.sleep(remaining);
+			} catch(InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
 
 		period.reset();
 	}

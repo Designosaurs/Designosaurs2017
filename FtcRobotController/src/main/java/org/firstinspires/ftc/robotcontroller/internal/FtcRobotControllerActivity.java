@@ -38,6 +38,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
@@ -46,6 +47,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -55,6 +58,7 @@ import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.qualcomm.ftccommon.AboutActivity;
 import com.qualcomm.ftccommon.ClassManagerFactory;
@@ -139,10 +143,36 @@ public class FtcRobotControllerActivity extends Activity {
 	protected Queue<UsbDevice> receivedUsbAttachmentNotifications;
 
 	public static SimpleController simpleController;
+	public static final int PERMISSION_REQUEST_CODE = 1;
 
 	protected class RobotRestarter implements Restarter {
 		public void requestRestart() {
 			requestRobotRestart();
+		}
+	}
+
+	private boolean checkPermission() {
+		int result = ContextCompat.checkSelfPermission(FtcRobotControllerActivity.this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+		return result == PackageManager.PERMISSION_GRANTED;
+	}
+
+	private void requestPermission() {
+		if(ActivityCompat.shouldShowRequestPermissionRationale(FtcRobotControllerActivity.this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+			Toast.makeText(FtcRobotControllerActivity.this, "Write External Storage permission allows us to do store images. Please allow this permission in App Settings.", Toast.LENGTH_LONG).show();
+		} else {
+			ActivityCompat.requestPermissions(FtcRobotControllerActivity.this, new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
+		}
+	}
+
+	@Override
+	public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+		switch(requestCode) {
+			case PERMISSION_REQUEST_CODE:
+				if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+					Log.i(TAG, "Permission granted!");
+				else
+					Log.i(TAG, "Permission denied!");
 		}
 	}
 
@@ -196,12 +226,18 @@ public class FtcRobotControllerActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		RobotLog.writeLogcatToDisk();
 		RobotLog.vv(TAG, "onCreate()");
 
 		receivedUsbAttachmentNotifications = new ConcurrentLinkedQueue<UsbDevice>();
 		eventLoop = null;
 
 		setContentView(R.layout.activity_ftc_controller);
+
+		if(checkPermission())
+			Log.i(TAG, "Permission granted!");
+		else
+			requestPermission();
 
 		this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -276,8 +312,6 @@ public class FtcRobotControllerActivity extends Activity {
 			HardwareFactory.enableDeviceEmulation();
 		}
 
-		// save 4MB of logcat to the SD card
-		RobotLog.writeLogcatToDisk(this, 4 * 1024);
 		wifiLock.acquire();
 		callback.networkConnectionUpdate(WifiDirectAssistant.Event.DISCONNECTED);
 		bindToService();
@@ -349,7 +383,7 @@ public class FtcRobotControllerActivity extends Activity {
 
 		unbindFromService();
 		wifiLock.release();
-		RobotLog.cancelWriteLogcatToDisk(this);
+		RobotLog.cancelWriteLogcatToDisk();
 	}
 
 	protected void bindToService() {

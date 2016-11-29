@@ -90,6 +90,7 @@ public class ButtonPusherManager extends Thread {
 			}
 		} catch(InterruptedException e) {
 			Log.i(TAG, "Shutting down...");
+			shutdown();
 		}
 	}
 

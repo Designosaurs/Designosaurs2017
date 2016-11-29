@@ -154,10 +154,10 @@ public abstract class DesignosaursOpMode extends OpMode {
      * @throws InterruptedException thrown if the thread is interrupted
      * @see #waitOneFullHardwareCycle()
      */
-    public final void idle() throws InterruptedException {
+    public final void idle() {
         // Abort the OpMode if we've been asked to stop
-        if (this.isStopRequested())
-            throw new InterruptedException();
+        if(this.isStopRequested())
+            Thread.currentThread().interrupt();
 
         // Otherwise, yield back our thread scheduling quantum and give other threads at
         // our priority level a chance to run

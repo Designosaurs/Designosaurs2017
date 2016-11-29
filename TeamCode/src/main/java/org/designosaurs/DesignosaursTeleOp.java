@@ -12,7 +12,7 @@ public class DesignosaursTeleOp extends LinearOpMode {
 	private static final double BUTTON_PUSHER_POWER = 0.5;
 
 	@Override
-	public void runOpMode() throws InterruptedException {
+	public void runOpMode() {
 		double left, right, buttonPusher;
 
 		robot.init(hardwareMap);
@@ -50,7 +50,7 @@ public class DesignosaursTeleOp extends LinearOpMode {
 				telemetry.update();
 			}
 
-			robot.waitForTick(40);
+			robot.waitForTick(20);
 			idle();
 		}
 	}

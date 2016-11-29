@@ -3,7 +3,7 @@
           xmlns:tools="http://schemas.android.com/tools"
           package="com.qualcomm.ftcrobotcontroller"
           android:versionCode="12"
-          android:versionName="2.2">
+          android:versionName="2.3.5">
 	<supports-screens   android:resizeable="true"
 						android:smallScreens="true"
 						android:normalScreens="true"
