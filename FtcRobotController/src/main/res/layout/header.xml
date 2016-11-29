@@ -44,7 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         android:paddingRight="8dp"
         android:paddingTop="2dp"
         android:paddingBottom="2dp"
-        android:background="#2980b9"
+        android:background="#46637F"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
