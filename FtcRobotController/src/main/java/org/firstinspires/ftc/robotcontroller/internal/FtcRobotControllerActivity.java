@@ -31,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 package org.firstinspires.ftc.robotcontroller.internal;
 
+import android.Manifest;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.ComponentName;
@@ -47,8 +48,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -58,7 +57,6 @@ import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.qualcomm.ftccommon.AboutActivity;
 import com.qualcomm.ftccommon.ClassManagerFactory;
@@ -152,17 +150,13 @@ public class FtcRobotControllerActivity extends Activity {
 	}
 
 	private boolean checkPermission() {
-		int result = ContextCompat.checkSelfPermission(FtcRobotControllerActivity.this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
+		int result = getApplicationContext().checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
 		return result == PackageManager.PERMISSION_GRANTED;
 	}
 
 	private void requestPermission() {
-		if(ActivityCompat.shouldShowRequestPermissionRationale(FtcRobotControllerActivity.this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-			Toast.makeText(FtcRobotControllerActivity.this, "Write External Storage permission allows us to do store images. Please allow this permission in App Settings.", Toast.LENGTH_LONG).show();
-		} else {
-			ActivityCompat.requestPermissions(FtcRobotControllerActivity.this, new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
-		}
+		requestPermissions(new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
 	}
 
 	@Override
@@ -226,13 +220,13 @@ public class FtcRobotControllerActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_ftc_controller);
+
 		RobotLog.writeLogcatToDisk();
 		RobotLog.vv(TAG, "onCreate()");
 
 		receivedUsbAttachmentNotifications = new ConcurrentLinkedQueue<UsbDevice>();
 		eventLoop = null;
-
-		setContentView(R.layout.activity_ftc_controller);
 
 		if(checkPermission())
 			Log.i(TAG, "Permission granted!");
@@ -277,7 +271,6 @@ public class FtcRobotControllerActivity extends Activity {
 			}
 		});
 
-		ClassManagerFactory.processClasses();
 		cfgFileMgr = new RobotConfigFileManager(this);
 
 		// Clean up 'dirty' status after a possible crash
