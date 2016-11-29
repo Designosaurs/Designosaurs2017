@@ -15,7 +15,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import java.util.Arrays;
 
 class DesignosaursHardware implements SensorEventListener {
-	static final boolean hardwareEnabled = true;
+	static final boolean hardwareEnabled = false;
 
 	DcMotor leftMotor = null;
 	DcMotor rightMotor = null;
@@ -38,12 +38,6 @@ class DesignosaursHardware implements SensorEventListener {
 	DesignosaursHardware() {}
 
 	void init(HardwareMap hwMap) {
-		buttonPusher = hwMap.dcMotor.get("buttonPusher");
-
-		buttonPusher.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-		buttonPusher.setDirection(DcMotor.Direction.REVERSE);
-		buttonPusher.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-
 		if(hardwareEnabled) {
 			leftMotor = hwMap.dcMotor.get("left");
 			rightMotor = hwMap.dcMotor.get("right");

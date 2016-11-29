@@ -170,7 +170,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		beacons.activate();
 
 		while(opModeIsActive()) {
-			Mat output = new Mat();
+			Mat output = null;
 			boolean havePixelData = false;
 			String beaconName = "";
 
