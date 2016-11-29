@@ -1,4 +1,4 @@
-package org.designosaurs;
+package org.designosaurs.opmode;
 
 import android.graphics.Bitmap;
 import android.graphics.Matrix;

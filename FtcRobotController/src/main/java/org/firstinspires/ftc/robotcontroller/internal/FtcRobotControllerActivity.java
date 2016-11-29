@@ -424,14 +424,10 @@ public class FtcRobotControllerActivity extends Activity {
 		// When the window loses focus (e.g., the action overflow is shown),
 		// cancel any pending hide action. When the window gains focus,
 		// hide the system UI.
-		if(hasFocus) {
-			if(ImmersiveMode.apiOver19()) {
-				// Immersive flag only works on API 19 and above.
-				immersion.hideSystemUI();
-			}
-		} else {
+		if(hasFocus)
+			immersion.hideSystemUI();
+		else
 			immersion.cancelSystemUIHide();
-		}
 	}
 
 
@@ -450,13 +446,13 @@ public class FtcRobotControllerActivity extends Activity {
 			startActivity(inspectionModeIntent);
 			return true;
 		} else if(id == R.id.action_debug_mode) {
-			List<OpModeMeta> opmodes =  eventLoop.getOpModeManager().getOpModes();
-			for(OpModeMeta e : opmodes) {
+			List<OpModeMeta> opmodes = eventLoop.getOpModeManager().getOpModes();
+
+			for(OpModeMeta e : opmodes)
 				if(e.flavor == OpModeMeta.Flavor.AUTONOMOUS) {
 					eventLoop.getOpModeManager().initActiveOpMode(e.name);
 					eventLoop.getOpModeManager().startActiveOpMode();
 				}
-			}
 		} else if(id == R.id.action_restart_robot) {
 			dimmer.handleDimTimer();
 			AppUtil.getInstance().showToast(context, context.getString(R.string.toastRestartingRobot));

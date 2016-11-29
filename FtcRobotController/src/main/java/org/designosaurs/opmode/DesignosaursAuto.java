@@ -1,4 +1,4 @@
-package org.designosaurs;
+package org.designosaurs.opmode;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -14,7 +14,8 @@ import com.vuforia.Matrix34F;
 import com.vuforia.Tool;
 import com.vuforia.Vec3F;
 
-import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
+import org.designosaurs.Vector2;
+import org.designosaurs.VuforiaLocalizerImplSubclass;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;

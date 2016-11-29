@@ -1,4 +1,4 @@
-package org.designosaurs;
+package org.designosaurs.opmode;
 
 import android.content.Context;
 import android.hardware.Sensor;

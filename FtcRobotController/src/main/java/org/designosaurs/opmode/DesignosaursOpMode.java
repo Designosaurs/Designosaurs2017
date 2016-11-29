@@ -1,4 +1,4 @@
-package org.designosaurs;
+package org.designosaurs.opmode;
 
 /**
  * Created by williamtdr on 11/19/16.

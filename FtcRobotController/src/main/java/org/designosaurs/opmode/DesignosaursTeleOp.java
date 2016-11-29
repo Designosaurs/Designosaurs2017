@@ -1,4 +1,4 @@
-package org.designosaurs;
+package org.designosaurs.opmode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;

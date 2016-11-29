@@ -1,6 +1,7 @@
-package org.designosaurs;
+package org.designosaurs.opmode;
 
 import android.util.Log;
+
 import java.util.ArrayList;
 
 public class ButtonPusherManager extends Thread {

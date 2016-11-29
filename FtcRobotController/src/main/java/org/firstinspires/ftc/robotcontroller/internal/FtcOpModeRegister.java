@@ -32,8 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 package org.firstinspires.ftc.robotcontroller.internal;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpModeManager;
+import com.qualcomm.robotcore.eventloop.opmode.OpModeMeta;
 import com.qualcomm.robotcore.eventloop.opmode.OpModeRegister;
 
+import org.designosaurs.opmode.DesignosaursAuto;
+import org.designosaurs.opmode.DesignosaursTeleOp;
 import org.firstinspires.ftc.robotcontroller.external.samples.ConceptNullOp;
 
 /**
@@ -62,10 +65,7 @@ public class FtcOpModeRegister implements OpModeRegister {
 	 * @see com.qualcomm.robotcore.eventloop.opmode.Autonomous
 	 */
 	public void register(OpModeManager manager) {
-		/**
-		 * Any manual OpMode class registrations should go here.
-		 */
-
-
+		manager.register(new OpModeMeta("Designosaurs Auto", OpModeMeta.Flavor.AUTONOMOUS, "Autonomous"), DesignosaursAuto.class);
+		manager.register(new OpModeMeta("Designosaurs TeleOp", OpModeMeta.Flavor.TELEOP, "TeleOp"), DesignosaursTeleOp.class);
 	}
 }
