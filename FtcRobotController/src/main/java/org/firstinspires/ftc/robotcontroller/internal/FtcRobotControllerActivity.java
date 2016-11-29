@@ -56,7 +56,6 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.google.blocks.ftcrobotcontroller.ProgrammingModeControllerImpl;
 import com.qualcomm.ftccommon.AboutActivity;
 import com.qualcomm.ftccommon.ClassManagerFactory;
 import com.qualcomm.ftccommon.Device;
@@ -66,7 +65,6 @@ import com.qualcomm.ftccommon.FtcRobotControllerService;
 import com.qualcomm.ftccommon.FtcRobotControllerService.FtcRobotControllerBinder;
 import com.qualcomm.ftccommon.FtcRobotControllerSettingsActivity;
 import com.qualcomm.ftccommon.LaunchActivityConstantsList;
-import com.qualcomm.ftccommon.ProgrammingModeController;
 import com.qualcomm.ftccommon.Restarter;
 
 import org.designosaurs.SimpleController;
@@ -115,8 +113,6 @@ public class FtcRobotControllerActivity extends Activity {
 
 	protected WifiManager.WifiLock wifiLock;
 	protected RobotConfigFileManager cfgFileMgr;
-
-	protected ProgrammingModeController programmingModeController;
 
 	protected UpdateUI.Callback callback;
 	protected Context context;
@@ -266,8 +262,6 @@ public class FtcRobotControllerActivity extends Activity {
 		dimmer = new Dimmer(this);
 		dimmer.longBright();
 
-		programmingModeController = new ProgrammingModeControllerImpl(this, (TextView) findViewById(R.id.textRemoteProgrammingMode));
-
 		updateUI = createUpdateUI();
 		callback = createUICallback(updateUI);
 
@@ -335,9 +329,6 @@ public class FtcRobotControllerActivity extends Activity {
 		super.onPause();
 
 		RobotLog.vv(TAG, "onPause()");
-		if(programmingModeController.isActive()) {
-			programmingModeController.stopProgrammingMode();
-		}
 	}
 
 	@Override
@@ -393,7 +384,6 @@ public class FtcRobotControllerActivity extends Activity {
 
 		String fileContents = readFile(networkTypeFile);
 		networkType = NetworkConnectionFactory.getTypeFromString(fileContents);
-		programmingModeController.setCurrentNetworkType(networkType);
 	}
 
 	private String readFile(File file) {
@@ -508,8 +498,8 @@ public class FtcRobotControllerActivity extends Activity {
 		hardwareFactory.setXmlPullParser(file.getXml());
 		factory = hardwareFactory;
 
-		eventLoop = new FtcEventLoop(factory, createOpModeRegister(), callback, this, programmingModeController);
-		FtcEventLoopIdle idleLoop = new FtcEventLoopIdle(factory, callback, this, programmingModeController);
+		eventLoop = new FtcEventLoop(factory, createOpModeRegister(), callback, this, null);
+		FtcEventLoopIdle idleLoop = new FtcEventLoopIdle(factory, callback, this, null);
 
 		controllerService.setCallback(callback);
 		controllerService.setupRobot(eventLoop, idleLoop);
