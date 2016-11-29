@@ -1,20 +1,17 @@
 package org.designosaurs.opmode;
 
 import android.content.Context;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.util.Log;
 import android.util.SparseIntArray;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import java.util.Arrays;
+import org.designosaurs.opmode.orientationProvider.CalibratedGyroscopeProvider;
+import org.designosaurs.opmode.orientationProvider.OrientationProvider;
 
-class DesignosaursHardware implements SensorEventListener {
+class DesignosaursHardware {
 	static final boolean hardwareEnabled = false;
 
 	DcMotor leftMotor = null;
@@ -28,12 +25,9 @@ class DesignosaursHardware implements SensorEventListener {
 	private ElapsedTime period = new ElapsedTime();
 	private SparseIntArray encoderOffsets = new SparseIntArray(3);
 
-	private SensorManager mSensorManager;
-	private Sensor gyroscope;
-
-	private static final float NS2S = 1.0f / 1000000000.0f;
-	private final float[] deltaRotationVector = new float[4];
-	private float lastSensorReading;
+	private OrientationProvider currentOrientationProvider;
+	private SensorManager sensorManager;
+	private float[] orientation = new float[3];
 
 	DesignosaursHardware() {}
 
@@ -57,10 +51,8 @@ class DesignosaursHardware implements SensorEventListener {
 			resetDriveEncoders();
 		}
 
-		mSensorManager = (SensorManager) hwMap.appContext.getSystemService(Context.SENSOR_SERVICE);
-		gyroscope = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-
-		mSensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_UI);
+		sensorManager = (SensorManager) hwMap.appContext.getSystemService(Context.SENSOR_SERVICE);
+		currentOrientationProvider = new CalibratedGyroscopeProvider(sensorManager);
 	}
 
 	void waitForTick(long periodMs) {
@@ -171,49 +163,23 @@ class DesignosaursHardware implements SensorEventListener {
 
 	/*** Sensors ***/
 
-	public void onSensorChanged(SensorEvent event) {
-		// This timestep's delta rotation to be multiplied by the current rotation
-		// after computing it from the gyro sample data.
-		if(lastSensorReading != 0) {
-			final float dT = (event.timestamp - lastSensorReading) * NS2S;
-			// Axis of the rotation sample, not normalized yet.
-			float axisX = event.values[0];
-			float axisY = event.values[1];
-			float axisZ = event.values[2];
-
-			// Calculate the angular speed of the sample
-			double omegaMagnitude = Math.sqrt(axisX*axisX + axisY*axisY + axisZ*axisZ);
-
-			// Integrate around this axis with the angular speed by the timestep
-			// in order to get a delta rotation from this sample over the timestep
-			// We will convert this axis-angle representation of the delta rotation
-			// into a quaternion before turning it into the rotation matrix.
-			double thetaOverTwo = omegaMagnitude * dT / 2.0f;
-			double sinThetaOverTwo = Math.sin(thetaOverTwo);
-			double cosThetaOverTwo = Math.cos(thetaOverTwo);
-
-			deltaRotationVector[0] = (float) sinThetaOverTwo * axisX;
-			deltaRotationVector[1] = (float) sinThetaOverTwo * axisY;
-			deltaRotationVector[2] = (float) sinThetaOverTwo * axisZ;
-			deltaRotationVector[3] = (float) cosThetaOverTwo;
-		}
-
-		lastSensorReading = event.timestamp;
-		float[] deltaRotationMatrix = new float[9];
-		SensorManager.getRotationMatrixFromVector(deltaRotationMatrix, deltaRotationVector);
-		// User code should concatenate the delta rotation we computed with the current rotation
-		// in order to get the updated rotation.
-
-		Log.i("DesignosaursAuto", Arrays.toString(deltaRotationMatrix));
-
+	void startOrientationTracking() {
+		currentOrientationProvider.start();
 	}
 
-	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-		// not sure if needed, placeholder just in case
+	float[] getOrientation() {
+		float[] result = new float[3];
+
+		currentOrientationProvider.getEulerAngles(orientation);
+		result[0] = (float) Math.toDegrees(orientation[0]) + 180;
+		result[1] = (float) Math.toDegrees(orientation[1]) + 180;
+		result[2] = (float) Math.toDegrees(orientation[2]) + 180;
+
+		return result;
 	}
 
 	void shutdown() {
-		mSensorManager.unregisterListener(this);
+		currentOrientationProvider.stop();
 		setDrivePower(0);
 	}
 }

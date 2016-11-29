@@ -110,7 +110,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		updateRunningState();
 	}
 
-	public void updateTeamColor() {
+	private void updateTeamColor() {
 		if(gamepad1.x)
 			teamColor = TEAM_BLUE;
 
@@ -165,8 +165,12 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			robot.waitForTick(20);
 		}
 
-		buttonPusherManager.start();
-		buttonPusherManager.setStatus(ButtonPusherManager.STATE_HOMING);
+		if(DesignosaursHardware.hardwareEnabled) {
+			buttonPusherManager.start();
+			buttonPusherManager.setStatus(ButtonPusherManager.STATE_HOMING);
+		}
+
+		robot.startOrientationTracking();
 		beacons.activate();
 
 		while(opModeIsActive()) {
