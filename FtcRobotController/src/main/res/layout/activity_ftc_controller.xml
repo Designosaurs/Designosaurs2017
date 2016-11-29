@@ -210,10 +210,4 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	  </FrameLayout>
 
   </RelativeLayout>
-
-  <WebView
-    android:id="@+id/webViewBlocksRuntime"
-    android:layout_width="1dp"
-    android:layout_height="1dp" />
-
 </LinearLayout>

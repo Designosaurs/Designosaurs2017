@@ -74,6 +74,10 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private byte targetSide = SIDE_LEFT;
 	private String lastScoredBeaconName = "";
 
+	DesignosaursAuto() {
+		Log.i(TAG, "**** Hi! ****");
+	}
+
 	private void setInitState(String state) {
 		telemetry.clear();
 		telemetry.addLine("== Designosaurs 2017 ==");

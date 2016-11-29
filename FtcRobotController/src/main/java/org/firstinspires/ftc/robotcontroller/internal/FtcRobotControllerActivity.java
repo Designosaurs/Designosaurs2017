@@ -52,15 +52,11 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
-import android.webkit.WebView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.google.blocks.ftcrobotcontroller.BlocksActivity;
-import com.google.blocks.ftcrobotcontroller.ProgrammingModeActivity;
 import com.google.blocks.ftcrobotcontroller.ProgrammingModeControllerImpl;
-import com.google.blocks.ftcrobotcontroller.runtime.BlocksOpMode;
 import com.qualcomm.ftccommon.AboutActivity;
 import com.qualcomm.ftccommon.ClassManagerFactory;
 import com.qualcomm.ftccommon.Device;
@@ -83,6 +79,7 @@ import com.qualcomm.ftccommon.configuration.RobotConfigFile;
 import com.qualcomm.ftccommon.configuration.RobotConfigFileManager;
 import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.hardware.HardwareFactory;
+import com.qualcomm.robotcore.eventloop.opmode.OpModeMeta;
 import com.qualcomm.robotcore.eventloop.opmode.OpModeRegister;
 import com.qualcomm.robotcore.hardware.configuration.Utility;
 import com.qualcomm.robotcore.robocol.PeerAppRobotController;
@@ -102,6 +99,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -246,8 +244,6 @@ public class FtcRobotControllerActivity extends Activity {
 				AppUtil.getInstance().openOptionsMenuFor(FtcRobotControllerActivity.this);
 			}
 		});
-
-		BlocksOpMode.setActivityAndWebView(this, (WebView) findViewById(R.id.webViewBlocksRuntime));
 
 		ClassManagerFactory.processClasses();
 		cfgFileMgr = new RobotConfigFileManager(this);
@@ -432,24 +428,18 @@ public class FtcRobotControllerActivity extends Activity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		int id = item.getItemId();
 
-		if(id == R.id.action_programming_mode) {
-			if(cfgFileMgr.getActiveConfig().isNoConfig()) {
-				// Tell the user they must configure the robot before starting programming mode.
-				AppUtil.getInstance().showToast(context, context.getString(R.string.toastConfigureRobotBeforeProgrammingMode));
-			} else {
-				Intent programmingModeIntent = new Intent(ProgrammingModeActivity.launchIntent);
-				programmingModeIntent.putExtra(LaunchActivityConstantsList.PROGRAMMING_MODE_ACTIVITY_NETWORK_TYPE, networkType);
-				startActivity(programmingModeIntent);
-			}
-			return true;
-		} else if(id == R.id.action_inspection_mode) {
+		if(id == R.id.action_inspection_mode) {
 			Intent inspectionModeIntent = new Intent(RcInspectionActivity.rcLaunchIntent);
 			startActivity(inspectionModeIntent);
 			return true;
-		} else if(id == R.id.action_blocks) {
-			Intent blocksIntent = new Intent(BlocksActivity.launchIntent);
-			startActivity(blocksIntent);
-			return true;
+		} else if(id == R.id.action_debug_mode) {
+			List<OpModeMeta> opmodes =  eventLoop.getOpModeManager().getOpModes();
+			for(OpModeMeta e : opmodes) {
+				if(e.flavor == OpModeMeta.Flavor.AUTONOMOUS) {
+					eventLoop.getOpModeManager().initActiveOpMode(e.name);
+					eventLoop.getOpModeManager().startActiveOpMode();
+				}
+			}
 		} else if(id == R.id.action_restart_robot) {
 			dimmer.handleDimTimer();
 			AppUtil.getInstance().showToast(context, context.getString(R.string.toastRestartingRobot));
@@ -468,9 +458,6 @@ public class FtcRobotControllerActivity extends Activity {
 			Intent intent = new Intent(AboutActivity.launchIntent);
 			intent.putExtra(LaunchActivityConstantsList.ABOUT_ACTIVITY_CONNECTION_TYPE, networkType);
 			startActivity(intent);
-			return true;
-		} else if(id == R.id.action_exit_app) {
-			finish();
 			return true;
 		}
 

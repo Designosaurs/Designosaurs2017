@@ -41,10 +41,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   <string name="app_name">Controller</string>
 
   <!-- Menu -->
+  <string name="debug_mode_menu_item">Debug Mode</string>
   <string name="inspection_mode_menu_item">Self Inspect</string>
   <string name="camera_debug_mode_menu_item">Debug Mode</string>
-  <string name="programming_mode_menu_item">Programming Mode</string>
-  <string name="blocks_menu_item">Blocks</string>
   <string name="settings_menu_item">Settings</string>
   <string name="restart_robot_menu_item">Restart Robot</string>
   <string name="configure_robot_menu_item">Configure Robot</string>
