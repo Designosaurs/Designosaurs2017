@@ -98,7 +98,6 @@ class DesignosaursHardware implements SensorEventListener {
 	void goStraight(double feet, double power) {
 		feet = Math.abs(feet);
 
-		int originalAngle = getRotationDegrees();
 		setDrivePower(power);
 		resetDriveEncoders();
 
@@ -109,8 +108,6 @@ class DesignosaursHardware implements SensorEventListener {
 				return;
 			}
 
-		Log.i("DesignosaursAuto", "Drift: " + (getRotationDegrees() - originalAngle) + " deg");
-
 		setDrivePower(0);
 		resetDriveEncoders();
 	}
@@ -120,8 +117,6 @@ class DesignosaursHardware implements SensorEventListener {
 
 		resetEncoder(leftMotor);
 		resetEncoder(rightMotor);
-
-		int originalAngle = getRotationDegrees();
 
 		primaryMotor = degrees > 0 ? rightMotor : leftMotor;
 		secondaryMotor = degrees > 0 ? leftMotor : rightMotor;
@@ -144,8 +139,6 @@ class DesignosaursHardware implements SensorEventListener {
 				return;
 			}
 
-		Log.i("DesignosaursAuto", "Delta: " + (getRotationDegrees() - originalAngle));
-
 		setDrivePower(0);
 		resetDriveEncoders();
 	}
@@ -159,10 +152,6 @@ class DesignosaursHardware implements SensorEventListener {
 	}
 
 	/*** Encoders ***/
-
-	private int getRotationDegrees() {
-		return (int) Math.round(Math.toDegrees(azimuth));
-	}
 
 	void resetDriveEncoders() {
 		resetEncoder(leftMotor);
@@ -195,14 +184,6 @@ class DesignosaursHardware implements SensorEventListener {
 
 			// Calculate the angular speed of the sample
 			double omegaMagnitude = Math.sqrt(axisX*axisX + axisY*axisY + axisZ*axisZ);
-
-			// Normalize the rotation vector if it's big enough to get the axis
-			// (that is, EPSILON should represent your maximum allowable margin of error)
-			if omegaMagnitude > 1) {
-				axisX /= omegaMagnitude;
-				axisY /= omegaMagnitude;
-				axisZ /= omegaMagnitude;
-			}
 
 			// Integrate around this axis with the angular speed by the timestep
 			// in order to get a delta rotation from this sample over the timestep
