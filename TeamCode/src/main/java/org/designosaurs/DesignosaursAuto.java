@@ -1,5 +1,6 @@
 package org.designosaurs;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -19,6 +20,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
@@ -73,10 +76,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private byte teamColor = TEAM_RED;
 	private byte targetSide = SIDE_LEFT;
 	private String lastScoredBeaconName = "";
-
-	DesignosaursAuto() {
-		Log.i(TAG, "**** Hi! ****");
-	}
+	private Context appContext;
 
 	private void setInitState(String state) {
 		telemetry.clear();
@@ -119,10 +119,24 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		setInitState("Ready!");
 	}
 
+	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(appContext) {
+		@Override
+		public void onManagerConnected(int status) {
+			switch(status) {
+				case LoaderCallbackInterface.SUCCESS:
+					Log.i(TAG, "OpenCV loaded successfully!");
+				default:
+					Log.i(TAG, "OpenCV load failure.");
+			}
+		}
+	};
+
+
 	@Override
 	public void runOpMode() throws InterruptedException {
 		setInitState("Configuring hardware...");
 		robot.init(hardwareMap);
+		appContext = hardwareMap.appContext;
 
 		setInitState("Initializing vuforia...");
 		VuforiaLocalizer.Parameters params = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
@@ -138,8 +152,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		beacons.get(3).setName("gears");
 
 		setInitState("Initializing OpenCV...");
+		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_1_0, hardwareMap.appContext, mLoaderCallback);
 
-		OpenCVLoader.initDebug();
 		setInitState("Select team color using the gamepad.");
 
 		while(!isStarted()) {
@@ -258,16 +272,15 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 							Log.i(TAG, "Beacon seen, but unable to pass data to OpenCV.");
 						}
-					} else
-						if(Math.abs(getRelativePosition()) < SLOW_DOWN_AT) {
-							stateMessage = "Beacon seen, centering (" + String.valueOf(getRelativePosition()) + ")...";
-							robot.resetDriveEncoders();
+					} else if(Math.abs(getRelativePosition()) < SLOW_DOWN_AT) {
+						stateMessage = "Beacon seen, centering (" + String.valueOf(getRelativePosition()) + ")...";
+						robot.resetDriveEncoders();
 
-							if(getRelativePosition() > 0 && getRelativePosition() != Integer.MAX_VALUE)
-								robot.setDrivePower(DRIVE_POWER * -0.5);
-							else
-								robot.setDrivePower(DRIVE_POWER * 0.5);
-						}
+						if(getRelativePosition() > 0 && getRelativePosition() != Integer.MAX_VALUE)
+							robot.setDrivePower(DRIVE_POWER * -0.5);
+						else
+							robot.setDrivePower(DRIVE_POWER * 0.5);
+					}
 				break;
 				case STATE_ALIGNING_WITH_BEACON:
 					stateMessage = "Positioning to deploy placer...";
