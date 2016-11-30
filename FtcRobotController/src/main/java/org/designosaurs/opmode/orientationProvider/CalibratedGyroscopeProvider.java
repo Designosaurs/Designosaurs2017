@@ -68,7 +68,7 @@ public class CalibratedGyroscopeProvider extends OrientationProvider {
         super(sensorManager);
 
         //Add the gyroscope
-        sensorList.add(sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE));
+        sensorList.add(sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE_UNCALIBRATED));
     }
 
     @Override

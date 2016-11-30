@@ -2,6 +2,7 @@ package org.designosaurs.opmode;
 
 import android.content.Context;
 import android.hardware.SensorManager;
+import android.util.Log;
 import android.util.SparseIntArray;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -12,7 +13,7 @@ import org.designosaurs.opmode.orientationProvider.CalibratedGyroscopeProvider;
 import org.designosaurs.opmode.orientationProvider.OrientationProvider;
 
 class DesignosaursHardware {
-	static final boolean hardwareEnabled = false;
+	static final boolean hardwareEnabled = true;
 
 	DcMotor leftMotor = null;
 	DcMotor rightMotor = null;
@@ -104,6 +105,8 @@ class DesignosaursHardware {
 	}
 
 	void turn(double degrees, double power) {
+		//degrees *= 0.845;
+
 		DcMotor primaryMotor, secondaryMotor;
 
 		resetEncoder(leftMotor);
@@ -112,23 +115,36 @@ class DesignosaursHardware {
 		primaryMotor = degrees > 0 ? rightMotor : leftMotor;
 		secondaryMotor = degrees > 0 ? leftMotor : rightMotor;
 
-		double adjustedPower,
-			   current = 0,
-			   target = Math.abs((degrees / 360) * COUNTS_PER_ROTATION);
+		double targetDegrees;
 
-		while(current <= target)
+		Log.i("DesignosaursAuto", "Desired rotation: " + degrees);
+		Log.i("DesignosaursAuto", "Current rotation: " + getOrientation()[2]);
+
+		if(degrees > 0)
+			if((getOrientation()[2] + degrees) > 360)
+				targetDegrees = (getOrientation()[2] + degrees) - 360;
+			else
+				targetDegrees = getOrientation()[2] + degrees;
+		else
+			if((getOrientation()[2] + degrees) < 0)
+				targetDegrees = (getOrientation()[2] + degrees) + 360;
+			else
+				targetDegrees = getOrientation()[2] + degrees;
+
+		Log.i("DesignosaursAuto", "Target rotation: " + targetDegrees);
+
+		primaryMotor.setPower(power);
+		secondaryMotor.setPower(-power);
+
+		while(degrees > 0 ? getOrientation()[2] <= targetDegrees : getOrientation()[2] >= targetDegrees)
 			try {
-				current = Math.abs(getAdjustedEncoderPosition(primaryMotor)) >= 2 ? Math.abs(getAdjustedEncoderPosition(primaryMotor)) : Math.abs(getAdjustedEncoderPosition(secondaryMotor)) * 2;
-
-				adjustedPower = Math.abs(Math.floor(current / target)) < 10 ? power * 0.5: power;
-
-				primaryMotor.setPower(adjustedPower);
-				secondaryMotor.setPower(-adjustedPower);
-
-				Thread.sleep(1);
+				Thread.sleep(5);
+				Thread.yield();
 			} catch(Exception e) {
 				return;
 			}
+
+		Log.i("DesignosaursAuto", String.valueOf(getOrientation()[2]));
 
 		setDrivePower(0);
 		resetDriveEncoders();

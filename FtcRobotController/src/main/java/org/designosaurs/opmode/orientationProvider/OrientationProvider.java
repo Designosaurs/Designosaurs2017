@@ -76,7 +76,7 @@ public abstract class OrientationProvider implements SensorEventListener {
             // enable our sensors when the activity is resumed, ask for
             // 20 ms updates (Sensor_delay_game)
             sensorManager.registerListener(this, sensor,
-                    SensorManager.SENSOR_DELAY_FASTEST);
+                    SensorManager.SENSOR_DELAY_GAME);
         }
     }
 

@@ -43,7 +43,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 	/* Configuration */
 	private static final double FAST_DRIVE_POWER = 0.7;
-	private static final double TURN_POWER = 0.25;
+	private static final double TURN_POWER = 0.2;
 	private static final double DRIVE_POWER = 0.3;
 	private static final double SLOW_DOWN_AT = 3000;
 	private static final int BEACON_ALIGNMENT_TOLERANCE = 100;
@@ -238,6 +238,11 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 			switch(autonomousState) {
 				case STATE_INITIAL_POSITIONING:
+					robot.turn(90, TURN_POWER);
+					robot.emergencyStop();
+
+					/*
+
 					updateRunningState("Accelerating...");
 					robot.goStraight(0.8, FAST_DRIVE_POWER);
 
@@ -251,6 +256,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					robot.turn(-50, TURN_POWER);
 
 					setState(STATE_SEARCHING);
+
+					*/
 				break;
 				case STATE_SEARCHING:
 					if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
