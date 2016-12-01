@@ -12,6 +12,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.designosaurs.opmode.orientationProvider.CalibratedGyroscopeProvider;
 import org.designosaurs.opmode.orientationProvider.OrientationProvider;
 
+import java.util.Arrays;
+
 class DesignosaursHardware {
 	static final boolean hardwareEnabled = true;
 
@@ -105,8 +107,6 @@ class DesignosaursHardware {
 	}
 
 	void turn(double degrees, double power) {
-		//degrees *= 0.845;
-
 		DcMotor primaryMotor, secondaryMotor;
 
 		resetEncoder(leftMotor);
@@ -132,6 +132,8 @@ class DesignosaursHardware {
 				targetDegrees = getOrientation()[2] + degrees;
 
 		Log.i("DesignosaursAuto", "Target rotation: " + targetDegrees);
+
+		waitForTick(500);
 
 		primaryMotor.setPower(power);
 		secondaryMotor.setPower(-power);
@@ -184,14 +186,15 @@ class DesignosaursHardware {
 	}
 
 	float[] getOrientation() {
-		float[] result = new float[3];
-
-		currentOrientationProvider.getEulerAngles(orientation);
-		result[0] = (float) Math.toDegrees(orientation[0]) + 180;
-		result[1] = (float) Math.toDegrees(orientation[1]) + 180;
-		result[2] = (float) Math.toDegrees(orientation[2]) + 180;
-
-		return result;
+//		float[] result = new float[3];
+//
+//		currentOrientationProvider.getEulerAngles(orientation);
+//		result[0] = (float) Math.toDegrees(orientation[0]) + 180;
+//		result[1] = (float) Math.toDegrees(orientation[1]) + 180;
+//		result[2] = (float) Math.toDegrees(orientation[2]) + 180;
+//
+//		return result;
+		return orientation;
 	}
 
 	void shutdown() {

@@ -238,7 +238,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 			switch(autonomousState) {
 				case STATE_INITIAL_POSITIONING:
-					robot.turn(90, TURN_POWER);
+					robot.turn(-Math.PI/2, TURN_POWER);
 					robot.emergencyStop();
 
 					/*
