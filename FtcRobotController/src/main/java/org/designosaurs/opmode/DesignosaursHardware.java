@@ -22,6 +22,8 @@ class DesignosaursHardware {
 	DcMotor leftMotor = null;
 	DcMotor rightMotor = null;
 	DcMotor buttonPusher = null;
+	DcMotor shooter = null;
+	DcMotor lift = null;
 	AdafruitBNO055IMU imu = null;
 
 	static final int COUNTS_PER_REVOLUTION = 2880;
@@ -42,6 +44,8 @@ class DesignosaursHardware {
 			leftMotor = hwMap.dcMotor.get("left");
 			rightMotor = hwMap.dcMotor.get("right");
 			buttonPusher = hwMap.dcMotor.get("buttonPusher");
+			shooter = hwMap.dcMotor.get("shooter");
+			lift = hwMap.dcMotor.get("lift");
 			imu = new AdafruitBNO055IMU(hwMap.i2cDeviceSynch.get("imu"));
 
 			leftMotor.setDirection(DcMotor.Direction.REVERSE);

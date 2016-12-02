@@ -159,8 +159,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 		setInitState("Select team color using the gamepad.");
 
-		robot.startOrientationTracking();
-
 		while(!isStarted()) {
 			updateTeamColor();
 
@@ -345,13 +343,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		switch(newState) {
 			case STATE_SEARCHING:
 				robot.setDrivePower(DRIVE_POWER);
-				robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-				robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+				robot.startOrientationTracking();
+
 				stateMessage = "Searching for beacon...";
-			break;
-			case STATE_WAITING_FOR_PLACER:
-				robot.leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-				robot.rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 			break;
 			case STATE_FINISHED:
 				stateMessage = "Done.";
