@@ -84,6 +84,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		telemetry.addLine("== Designosaurs 2017 ==");
 		telemetry.addLine(state);
 		telemetry.addLine("");
+		telemetry.addLine("IMU: " + robot.getCalibrationStatus());
 		telemetry.addLine("Team color: " + teamColorToString());
 		telemetry.update();
 	}
@@ -158,11 +159,12 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 		setInitState("Select team color using the gamepad.");
 
-		while(!isStarted()) {
-			if(gamepad1.x || gamepad1.b)
-				updateTeamColor();
+		robot.startOrientationTracking();
 
-			robot.waitForTick(20);
+		while(!isStarted()) {
+			updateTeamColor();
+
+			robot.waitForTick(250);
 		}
 
 		if(DesignosaursHardware.hardwareEnabled) {
@@ -170,7 +172,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			buttonPusherManager.setStatus(ButtonPusherManager.STATE_HOMING);
 		}
 
-		robot.startOrientationTracking();
 		beacons.activate();
 
 		while(opModeIsActive()) {
@@ -238,11 +239,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 			switch(autonomousState) {
 				case STATE_INITIAL_POSITIONING:
-					robot.turn(-Math.PI/2, TURN_POWER);
-					robot.emergencyStop();
-
-					/*
-
 					updateRunningState("Accelerating...");
 					robot.goStraight(0.8, FAST_DRIVE_POWER);
 
@@ -253,11 +249,12 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					robot.goStraight(2.8, FAST_DRIVE_POWER);
 
 					updateRunningState("Secondary turn...");
-					robot.turn(-50, TURN_POWER);
+					robot.turn(-45, TURN_POWER);
+
+					updateRunningState("Returning to zero...");
+					robot.returnToZero();
 
 					setState(STATE_SEARCHING);
-
-					*/
 				break;
 				case STATE_SEARCHING:
 					if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {

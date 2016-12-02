@@ -1,18 +1,20 @@
 package org.designosaurs.opmode;
 
-import android.content.Context;
-import android.hardware.SensorManager;
 import android.util.Log;
 import android.util.SparseIntArray;
 
+import com.qualcomm.hardware.adafruit.AdafruitBNO055IMU;
+import com.qualcomm.hardware.adafruit.BNO055IMU;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.designosaurs.opmode.orientationProvider.CalibratedGyroscopeProvider;
-import org.designosaurs.opmode.orientationProvider.OrientationProvider;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 
-import java.util.Arrays;
+import java.text.DecimalFormat;
+import java.util.List;
 
 class DesignosaursHardware {
 	static final boolean hardwareEnabled = true;
@@ -20,6 +22,7 @@ class DesignosaursHardware {
 	DcMotor leftMotor = null;
 	DcMotor rightMotor = null;
 	DcMotor buttonPusher = null;
+	AdafruitBNO055IMU imu = null;
 
 	static final int COUNTS_PER_REVOLUTION = 2880;
 	static final int COUNTS_PER_ROTATION = 7715;
@@ -28,9 +31,9 @@ class DesignosaursHardware {
 	private ElapsedTime period = new ElapsedTime();
 	private SparseIntArray encoderOffsets = new SparseIntArray(3);
 
-	private OrientationProvider currentOrientationProvider;
-	private SensorManager sensorManager;
-	private float[] orientation = new float[3];
+	private Orientation orientation;
+	private final String TAG = "DesignosaursHardware";
+	private DecimalFormat decimalFormat = new DecimalFormat("#.00");
 
 	DesignosaursHardware() {}
 
@@ -39,6 +42,7 @@ class DesignosaursHardware {
 			leftMotor = hwMap.dcMotor.get("left");
 			rightMotor = hwMap.dcMotor.get("right");
 			buttonPusher = hwMap.dcMotor.get("buttonPusher");
+			imu = new AdafruitBNO055IMU(hwMap.i2cDeviceSynch.get("imu"));
 
 			leftMotor.setDirection(DcMotor.Direction.REVERSE);
 			leftMotor.setPower(0);
@@ -52,10 +56,21 @@ class DesignosaursHardware {
 			encoderOffsets.put(rightMotor.hashCode(), 0);
 			encoderOffsets.put(buttonPusher.hashCode(), 0);
 			resetDriveEncoders();
+
+			BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+			parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+			parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+			//parameters.calibrationDataFile = "AdafruitIMUCalibration.json"; // see the calibration sample opmode
+			parameters.loggingEnabled = false;
+			parameters.temperatureUnit = BNO055IMU.TempUnit.FARENHEIT;
+
+			imu.initialize(parameters);
+
+			Log.i(TAG, "Hardware initialized.");
+			return;
 		}
 
-		sensorManager = (SensorManager) hwMap.appContext.getSystemService(Context.SENSOR_SERVICE);
-		currentOrientationProvider = new CalibratedGyroscopeProvider(sensorManager);
+		Log.i(TAG, "Skipping hardware initialization (test mode).");
 	}
 
 	void waitForTick(long periodMs) {
@@ -90,6 +105,8 @@ class DesignosaursHardware {
 	}
 
 	void goStraight(double feet, double power) {
+		Log.i(TAG, "Going for " + decimalFormat.format(feet) + " ft at " + (power * 100) + "% power...");
+
 		feet = Math.abs(feet);
 
 		setDrivePower(power);
@@ -104,52 +121,53 @@ class DesignosaursHardware {
 
 		setDrivePower(0);
 		resetDriveEncoders();
+
+		Log.i(TAG, "Done.");
 	}
 
 	void turn(double degrees, double power) {
 		DcMotor primaryMotor, secondaryMotor;
+		double targetDegrees;
+
+		Log.i(TAG, "Starting pivot to " + decimalFormat.format(degrees) + " deg at " + (power * 100) + "% power...");
 
 		resetEncoder(leftMotor);
 		resetEncoder(rightMotor);
+		updateOrientation();
 
 		primaryMotor = degrees > 0 ? rightMotor : leftMotor;
 		secondaryMotor = degrees > 0 ? leftMotor : rightMotor;
 
-		double targetDegrees;
-
-		Log.i("DesignosaursAuto", "Desired rotation: " + degrees);
-		Log.i("DesignosaursAuto", "Current rotation: " + getOrientation()[2]);
+		Log.i(TAG, "Current rotation: " + decimalFormat.format(getHeading()));
 
 		if(degrees > 0)
-			if((getOrientation()[2] + degrees) > 360)
-				targetDegrees = (getOrientation()[2] + degrees) - 360;
+			if((getHeading() + degrees) > 360)
+				targetDegrees = (getHeading() + degrees) - 360;
 			else
-				targetDegrees = getOrientation()[2] + degrees;
+				targetDegrees = getHeading() + degrees;
 		else
-			if((getOrientation()[2] + degrees) < 0)
-				targetDegrees = (getOrientation()[2] + degrees) + 360;
+			if((getHeading() + degrees) < 0)
+				targetDegrees = (getHeading() + degrees) + 360;
 			else
-				targetDegrees = getOrientation()[2] + degrees;
+				targetDegrees = getHeading() + degrees;
 
-		Log.i("DesignosaursAuto", "Target rotation: " + targetDegrees);
-
-		waitForTick(500);
+		Log.i(TAG, "Target rotation: " + targetDegrees);
 
 		primaryMotor.setPower(power);
 		secondaryMotor.setPower(-power);
 
-		while(degrees > 0 ? getOrientation()[2] <= targetDegrees : getOrientation()[2] >= targetDegrees)
+		while(degrees > 0 ? getHeading() <= targetDegrees : getHeading() >= targetDegrees)
 			try {
-				Thread.sleep(5);
-				Thread.yield();
+				Thread.sleep(15);
+				updateOrientation();
 			} catch(Exception e) {
 				return;
 			}
 
-		Log.i("DesignosaursAuto", String.valueOf(getOrientation()[2]));
-
 		setDrivePower(0);
 		resetDriveEncoders();
+
+		Log.i(TAG, "Done, new rotation is " + decimalFormat.format(getHeading()) + ".");
 	}
 
 	void emergencyStop() {
@@ -161,6 +179,15 @@ class DesignosaursHardware {
 	}
 
 	/*** Encoders ***/
+
+	void returnToZero() {
+		updateOrientation();
+
+		if(getHeading() > 180)
+			turn(360 - getHeading(), 0.4);
+		else
+			turn(-getHeading(), 0.4);
+	}
 
 	void resetDriveEncoders() {
 		resetEncoder(leftMotor);
@@ -182,23 +209,25 @@ class DesignosaursHardware {
 	/*** Sensors ***/
 
 	void startOrientationTracking() {
-		currentOrientationProvider.start();
+		if(imu != null)
+			imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
 	}
 
-	float[] getOrientation() {
-//		float[] result = new float[3];
-//
-//		currentOrientationProvider.getEulerAngles(orientation);
-//		result[0] = (float) Math.toDegrees(orientation[0]) + 180;
-//		result[1] = (float) Math.toDegrees(orientation[1]) + 180;
-//		result[2] = (float) Math.toDegrees(orientation[2]) + 180;
-//
-//		return result;
-		return orientation;
+	private void updateOrientation() {
+		if(imu != null)
+			orientation = imu.getAngularOrientation();
+	}
+
+	String getCalibrationStatus() {
+		return imu == null ? "disabled" : imu.getCalibrationStatus().toString();
+	}
+
+	float getHeading() {
+		return imu == null ? 0 : -orientation.firstAngle;
 	}
 
 	void shutdown() {
-		currentOrientationProvider.stop();
+		imu.stopAccelerationIntegration();
 		setDrivePower(0);
 	}
 }
