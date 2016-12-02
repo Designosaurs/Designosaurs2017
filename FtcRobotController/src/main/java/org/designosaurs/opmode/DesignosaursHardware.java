@@ -56,6 +56,8 @@ class DesignosaursHardware {
 			buttonPusher.setDirection(DcMotor.Direction.REVERSE);
 			buttonPusher.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
+			lift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
 			encoderOffsets.put(leftMotor.hashCode(), 0);
 			encoderOffsets.put(rightMotor.hashCode(), 0);
 			encoderOffsets.put(buttonPusher.hashCode(), 0);
