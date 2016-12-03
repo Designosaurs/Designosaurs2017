@@ -38,13 +38,15 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private BeaconProcessor beaconProcessor = new BeaconProcessor();
 	private ButtonPusherManager buttonPusherManager = new ButtonPusherManager(robot);
 
+	// Whether to block out the garbage data in the center of the beacon, assuming that it's not taped
+	// The field setup guide says it should be taped on the inside, I have yet to see one configured as such
 	private final boolean OBFUSCATE_MIDDLE = true;
 	private final String VUFORIA_LICENCE_KEY = "ATwI0oz/////AAAAGe9HyiYVEU6pmTFAb65tOfUrioTxlZtITHRLN1h3wllaw67kJsUOHwPVDsCN0vxiKy/9Qi9NnjpkVfUnn0gwIHyKJgTYkG7+dCaJtFJlY94qa1YPCy0y4rwhVQFkDkcaCiNoiS7ZSU5KLeIABF4Gvz9qYwJJtwxWGp4fbjyu+arTOUw160+Fg5XMjoftS8FAQPx4wF33sVdGw+CYX0fHdwQzOyN0PpIwBQ9xvb8e1c76FoHF0YUZyV/q0XeR97nRj1TfnesPc+v7Z72SEDCXAAdVVS6L9u/mVAxq4zTaXsdGcVsqHeaouoGmQ/1Ey/YYShqHaRZXWwC4GsgaxO9tCkWNH+hTjFZA2pgvKVl5HmLR";
 
 	/* Configuration */
-	private static final double FAST_DRIVE_POWER = 0.8;
-	private static final double TURN_POWER = 0.3;
-	private static final double DRIVE_POWER = 0.22;
+	private static final double FAST_DRIVE_POWER = 0.85;
+	private static final double TURN_POWER = 0.4;
+	private static final double DRIVE_POWER = 0.25;
 	private static final double SLOW_DOWN_AT = 3000;
 	private static final int BEACON_ALIGNMENT_TOLERANCE = 100;
 	public static final boolean SAVE_IMAGES = false;
@@ -74,12 +76,13 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private static String TAG = "DesignosaursAuto";
 	private int centeredPos = Integer.MAX_VALUE;
 	private long lastTelemetryUpdate = 0;
-	private byte teamColor = TEAM_RED;
+	private byte teamColor = TEAM_UNSELECTED;
 	private byte targetSide = SIDE_LEFT;
 	private String lastScoredBeaconName = "";
 	private Context appContext;
 	private Mat output = null;
 
+	// Interpret the initialization string returned by the IMU
 	private String getIMUState() {
 		if(robot.getCalibrationStatus().contains(" "))
 			switch(Integer.valueOf(robot.getCalibrationStatus().split("\\s+")[1].substring(1, 2))) {
@@ -96,6 +99,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		return robot.getCalibrationStatus();
 	}
 
+	// Write pre-run state to telemetry (driver station)
 	private void setInitState(String state) {
 		telemetry.clear();
 		telemetry.addLine("== Designosaurs 2017 ==");
@@ -106,6 +110,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		telemetry.update();
 	}
 
+	// Write running state to telemetry (driver station)
 	private void updateRunningState() {
 		if(System.currentTimeMillis() - lastTelemetryUpdate < 250)
 			return;
@@ -115,19 +120,21 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		telemetry.addLine(stateMessage);
 		telemetry.addLine("");
 		telemetry.addLine("State: " + getStateMessage());
-		telemetry.addLine("Button pusher: " + buttonPusherManager.getStatusMessage());
 		telemetry.addLine("Time in state: " + String.valueOf(ticksInState));
-		telemetry.addLine("Centered: " + String.valueOf(getRelativePosition()));
+		telemetry.addLine("Button pusher: " + buttonPusherManager.getStatusMessage());
 		telemetry.addLine("Beacons scored: " + String.valueOf(beaconsFound));
 		telemetry.update();
 	}
 
+	// Shortcut method
 	private void updateRunningState(String newStateMessage) {
 		stateMessage = newStateMessage;
 
-		updateRunningState();
+		if(teamColor == TEAM_UNSELECTED)
+			updateRunningState();
 	}
 
+	// Looped before start because IMU initializes asynchronously
 	private void updateTeamColor() {
 		if(gamepad1.x)
 			teamColor = TEAM_BLUE;
@@ -138,6 +145,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		setInitState("Ready!");
 	}
 
+	// Uses the separate OpenCV Manager app to shave a bit off the app size
 	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(appContext) {
 		@Override
 		public void onManagerConnected(int status) {
@@ -153,6 +161,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	};
 
 
+	// This is where the main logic block lives
 	@Override
 	public void runOpMode() {
 		setInitState("Configuring hardware...");
@@ -166,6 +175,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 		VuforiaLocalizerImplSubclass vuforia = new VuforiaLocalizerImplSubclass(params);
 
+		// Vuforia tracks the images, we'll call them beacons
 		VuforiaTrackables beacons = vuforia.loadTrackablesFromAsset("FTC_2016-17");
 		beacons.get(0).setName("wheels");
 		beacons.get(1).setName("tools");
@@ -194,12 +204,14 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			boolean havePixelData = false;
 			String beaconName = "";
 
+			// Detect and process images
 			for(VuforiaTrackable beac : beacons) {
 				OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) beac.getListener()).getRawPose();
 
 				if(pose != null) {
 					beaconName = beac.getName();
-					if(beac.getName().equals(lastScoredBeaconName))
+
+					if(beac.getName().equals(lastScoredBeaconName)) // fixes seeing the first beacon and wanting to go back to it
 						continue;
 
 					Matrix34F rawPose = new Matrix34F();
@@ -212,7 +224,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					Vector2 lowerLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(-100, 142, 0))); // -127, -92, 0
 					Vector2 lowerRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(100, 142, 0))); // 127, -92, 0
 
-					centeredPos = center.y;
+					centeredPos = center.y; // drive routines align based on this
 
 					if(vuforia.rgb == null)
 						continue;
@@ -227,6 +239,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						continue;
 
 					try {
+						// Pass the cropped portion of the detected image to OpenCV:
 						Bitmap a = Bitmap.createBitmap(bm, start.x, start.y, end.x, end.y);
 
 						Bitmap resizedbitmap = DesignosaursUtils.resize(a, a.getWidth() / 2, a.getHeight() / 2);
@@ -240,6 +253,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 							canvas.drawRect(resizedbitmap.getWidth() * 12 / 30, 0, resizedbitmap.getWidth() * 17 / 30, resizedbitmap.getHeight(), paint);
 						}
 
+						// TODO: Fix web debugging view
 						//FtcRobotControllerActivity.simpleController.setImage(resizedbitmap);
 						//FtcRobotControllerActivity.simpleController.setImage2(bm);
 
@@ -255,13 +269,15 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			switch(autonomousState) {
 				case STATE_INITIAL_POSITIONING:
 					updateRunningState("Accelerating...");
-					robot.goStraight(0.8, FAST_DRIVE_POWER);
+					robot.accel(0.8, FAST_DRIVE_POWER);
 
 					updateRunningState("Initial turn...");
 					robot.turn(-40, TURN_POWER);
 
 					updateRunningState("Secondary move...");
-					robot.goStraight(2.7, FAST_DRIVE_POWER);
+					robot.accel(0.5, FAST_DRIVE_POWER);
+					robot.goStraight(1.7, FAST_DRIVE_POWER);
+					robot.decel(0.5, 0.1);
 
 					updateRunningState("Secondary turn...");
 					robot.turn(40, TURN_POWER);
@@ -275,9 +291,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
 						stateMessage = "Analysing beacon data...";
 
-						robot.setDrivePower(0);
-
 						if(havePixelData) {
+							robot.setDrivePower(0);
 							stateMessage = "Beacon found!";
 
 							BeaconColorResult lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), output, SAVE_IMAGES).getResult();
@@ -292,7 +307,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 							setState(STATE_ALIGNING_WITH_BEACON);
 						} else {
-							robot.setDrivePower(0.15);
+							// Slow down, assuming the camera can't see the whole beacon yet
+							robot.setDrivePower(0.2);
 							stateMessage = "Waiting for conversion...";
 
 							Log.i(TAG, "Beacon seen, but unable to pass data to OpenCV.");
@@ -332,7 +348,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						else {
 							robot.turn(-1, TURN_POWER);
 
-							robot.goStraight(targetSide == SIDE_LEFT ? 2.8 : 2.3, FAST_DRIVE_POWER);
+							robot.goStraight(targetSide == SIDE_LEFT ? 3.5 : 3, FAST_DRIVE_POWER);
 							robot.returnToZero();
 
 							setState(STATE_SEARCHING);
@@ -346,6 +362,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		}
 	}
 
+	// DesignosaursOpMode created so this gets called
 	@Override
 	public void onStop() {
 		Log.i(TAG, "*** SHUTTING DOWN ***");
@@ -353,6 +370,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		robot.shutdown();
 	}
 
+	// Please use this instead of directly updating state machine
 	private void setState(byte newState) {
 		Log.i(TAG, "*** SWITCHING STATES ***");
 		Log.i(TAG, "New state: " + String.valueOf(newState));
@@ -373,6 +391,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		ticksInState = 0;
 	}
 
+	// Gets written to the driver station to explain the current state
 	private String getStateMessage() {
 		switch(autonomousState) {
 			case STATE_INITIAL_POSITIONING:
@@ -390,6 +409,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		return "unknown";
 	}
 
+	// Gets written to the driver station to represent what's selected on the joysticks
 	private String teamColorToString() {
 		switch(teamColor) {
 			case TEAM_UNSELECTED:
@@ -403,6 +423,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		return "unknown";
 	}
 
+	// Offset here represents how far the camera is from the button pusher
 	private int getRelativePosition() {
 		return centeredPos - 350;
 	}

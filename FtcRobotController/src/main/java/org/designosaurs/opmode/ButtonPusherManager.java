@@ -6,10 +6,14 @@ import java.util.ArrayList;
 
 public class ButtonPusherManager extends Thread {
 	/* Configuration */
-	private static final double POWER = 0.2;
+	private static final double POWER = 0.25;
+	// Expected change in encoder counts per loop, used to detect whether it's home/stuck
 	private static final int MOVEMENT_THRESHOLD = 10;
+	// Target base position to return to after homing or scoring
 	private static final double TARGET_IDLE_POSITION = DesignosaursHardware.COUNTS_PER_REVOLUTION * 0.25;
+	// Allowance for the button pusher being in the home position, in encoder counts
 	private static final double AT_BASE_TOLERANCE = 50;
+	// Max value in encoder counts that the button pusher can go without going past the track
 	private static final double EXTEND_MAX = 3800;
 
 	/* Available states */
@@ -20,9 +24,8 @@ public class ButtonPusherManager extends Thread {
 
 	private byte state = -1;
 	private int lastPosition = 0;
-	private ArrayList<Integer> positionHistory = new ArrayList<>(20);
+	private ArrayList<Integer> positionHistory = new ArrayList<>(40);
 
-	private int ticks = 0;
 	private int ticksInState = 0;
 	private boolean isRunning = true;
 
@@ -34,7 +37,6 @@ public class ButtonPusherManager extends Thread {
 	}
 
 	private void update() {
-		ticks++;
 		ticksInState++;
 
 		int movementDelta = robot.getAdjustedEncoderPosition(robot.buttonPusher) - lastPosition;
@@ -43,10 +45,12 @@ public class ButtonPusherManager extends Thread {
 
 		lastPosition = robot.getAdjustedEncoderPosition(robot.buttonPusher);
 
+		// Routine to detect whether pusher is actually moving:
 		if(ticksInState > 20) {
 			positionHistory.remove(0);
 			positionHistory.add(Math.abs(movementDelta));
 
+			// Maintain a backlog of recent positions, so singlular values don't throw it off
 			for(int i = 0; i < positionHistory.size(); i++) {
 				Integer val = positionHistory.get(i);
 
@@ -68,6 +72,7 @@ public class ButtonPusherManager extends Thread {
 				}
 			break;
 			case STATE_RETURNING_TO_BASE:
+				// Tries to maintain button pusher at TARGET_IDLE_POSITION
 				double buttonPusherPositionDelta = robot.getAdjustedEncoderPosition(robot.buttonPusher) - TARGET_IDLE_POSITION;
 
 				if(Math.abs(buttonPusherPositionDelta) < AT_BASE_TOLERANCE) {
@@ -87,7 +92,7 @@ public class ButtonPusherManager extends Thread {
 		try {
 			while(isRunning) {
 				update();
-				Thread.sleep(5);
+				Thread.sleep(5); // careful when adjusting loop time, that affects length of movement history
 			}
 		} catch(InterruptedException e) {
 			Log.i(TAG, "Shutting down...");
@@ -99,6 +104,7 @@ public class ButtonPusherManager extends Thread {
 		return state;
 	}
 
+	// Written to driver station via telemetry
 	String getStatusMessage() {
 		switch(state) {
 			case STATE_HOMING:
@@ -114,11 +120,12 @@ public class ButtonPusherManager extends Thread {
 		return "unknown";
 	}
 
+	// Use to progress state machine
 	public void setStatus(byte state) {
 		Log.i(TAG, "*** SWITCHING STATES ***");
 		Log.i(TAG, "Previous state: " + this.state);
 		Log.i(TAG, "New state: " + state);
-		Log.i(TAG, "Time in state: " + ticksInState + " ticks");
+		Log.i(TAG, "Time in state: " + ticksInState);
 
 		this.state = state;
 
@@ -143,9 +150,9 @@ public class ButtonPusherManager extends Thread {
 		return ticksInState;
 	}
 
+	// Called when opmode cleanly shuts down
 	void shutdown() {
 		isRunning = false;
-			robot.setButtonPusherPower(0);
+		robot.setButtonPusherPower(0);
 	}
-
 }
