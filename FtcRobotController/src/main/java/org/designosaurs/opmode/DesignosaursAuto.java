@@ -79,12 +79,28 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private String lastScoredBeaconName = "";
 	private Context appContext;
 
+	private String getIMUState() {
+		if(robot.getCalibrationStatus().contains(" "))
+			switch(Integer.valueOf(robot.getCalibrationStatus().split("\\s+")[1].substring(1, 2))) {
+				case 0:
+					return "disabled";
+				case 1:
+					return "Initializing...";
+				case 2:
+					return "Calibrating...";
+				case 3:
+					return "Ready!";
+			}
+
+		return robot.getCalibrationStatus();
+	}
+
 	private void setInitState(String state) {
 		telemetry.clear();
 		telemetry.addLine("== Designosaurs 2017 ==");
 		telemetry.addLine(state);
 		telemetry.addLine("");
-		telemetry.addLine("IMU: " + robot.getCalibrationStatus());
+		telemetry.addLine("IMU: " + getIMUState());
 		telemetry.addLine("Team color: " + teamColorToString());
 		telemetry.update();
 	}
@@ -159,7 +175,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 		setInitState("Select team color using the gamepad.");
 
-		while(!isStarted()) {
+		while(!isStarted() && !isStopRequested()) {
 			updateTeamColor();
 
 			robot.waitForTick(250);

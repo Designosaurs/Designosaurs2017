@@ -14,7 +14,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 
 import java.text.DecimalFormat;
-import java.util.List;
 
 class DesignosaursHardware {
 	static final boolean hardwareEnabled = true;
