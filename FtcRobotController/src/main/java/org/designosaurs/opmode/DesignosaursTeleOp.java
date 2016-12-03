@@ -2,6 +2,7 @@ package org.designosaurs.opmode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 
 @TeleOp(name = "Designosaurs Drive", group = "TeleOp")
 public class DesignosaursTeleOp extends LinearOpMode {
@@ -20,6 +21,9 @@ public class DesignosaursTeleOp extends LinearOpMode {
 		telemetry.addLine("Designosaurs 2017");
 		telemetry.addLine("Ready to start!");
 		telemetry.update();
+
+		robot.leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		robot.rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
 		waitForStart();
 

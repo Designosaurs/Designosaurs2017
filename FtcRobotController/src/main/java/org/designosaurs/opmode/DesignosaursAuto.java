@@ -42,9 +42,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private final String VUFORIA_LICENCE_KEY = "ATwI0oz/////AAAAGe9HyiYVEU6pmTFAb65tOfUrioTxlZtITHRLN1h3wllaw67kJsUOHwPVDsCN0vxiKy/9Qi9NnjpkVfUnn0gwIHyKJgTYkG7+dCaJtFJlY94qa1YPCy0y4rwhVQFkDkcaCiNoiS7ZSU5KLeIABF4Gvz9qYwJJtwxWGp4fbjyu+arTOUw160+Fg5XMjoftS8FAQPx4wF33sVdGw+CYX0fHdwQzOyN0PpIwBQ9xvb8e1c76FoHF0YUZyV/q0XeR97nRj1TfnesPc+v7Z72SEDCXAAdVVS6L9u/mVAxq4zTaXsdGcVsqHeaouoGmQ/1Ey/YYShqHaRZXWwC4GsgaxO9tCkWNH+hTjFZA2pgvKVl5HmLR";
 
 	/* Configuration */
-	private static final double FAST_DRIVE_POWER = 0.7;
-	private static final double TURN_POWER = 0.2;
-	private static final double DRIVE_POWER = 0.3;
+	private static final double FAST_DRIVE_POWER = 0.8;
+	private static final double TURN_POWER = 0.3;
+	private static final double DRIVE_POWER = 0.22;
 	private static final double SLOW_DOWN_AT = 3000;
 	private static final int BEACON_ALIGNMENT_TOLERANCE = 100;
 	public static final boolean SAVE_IMAGES = false;
@@ -78,6 +78,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private byte targetSide = SIDE_LEFT;
 	private String lastScoredBeaconName = "";
 	private Context appContext;
+	private Mat output = null;
 
 	private String getIMUState() {
 		if(robot.getCalibrationStatus().contains(" "))
@@ -143,6 +144,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			switch(status) {
 				case LoaderCallbackInterface.SUCCESS:
 					Log.i(TAG, "OpenCV loaded successfully!");
+					output = new Mat();
 				break;
 				default:
 					Log.i(TAG, "OpenCV load failure.");
@@ -189,7 +191,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		beacons.activate();
 
 		while(opModeIsActive()) {
-			Mat output = null;
 			boolean havePixelData = false;
 			String beaconName = "";
 
@@ -246,7 +247,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 						havePixelData = true;
 					} catch(Exception e) {
-						//e.printStackTrace();
+						e.printStackTrace();
 					}
 				}
 			}
@@ -257,13 +258,13 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					robot.goStraight(0.8, FAST_DRIVE_POWER);
 
 					updateRunningState("Initial turn...");
-					robot.turn(60, TURN_POWER);
+					robot.turn(-40, TURN_POWER);
 
 					updateRunningState("Secondary move...");
-					robot.goStraight(2.8, FAST_DRIVE_POWER);
+					robot.goStraight(2.7, FAST_DRIVE_POWER);
 
 					updateRunningState("Secondary turn...");
-					robot.turn(-45, TURN_POWER);
+					robot.turn(40, TURN_POWER);
 
 					updateRunningState("Returning to zero...");
 					robot.returnToZero();
@@ -291,7 +292,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 							setState(STATE_ALIGNING_WITH_BEACON);
 						} else {
-							robot.goStraight(-0.5, DRIVE_POWER);
+							robot.setDrivePower(0.15);
 							stateMessage = "Waiting for conversion...";
 
 							Log.i(TAG, "Beacon seen, but unable to pass data to OpenCV.");
@@ -329,9 +330,10 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						if(beaconsFound == 2)
 							setState(STATE_FINISHED);
 						else {
-							robot.turn(1, TURN_POWER);
-							robot.goStraight(2.3, FAST_DRIVE_POWER);
 							robot.turn(-1, TURN_POWER);
+
+							robot.goStraight(targetSide == SIDE_LEFT ? 2.8 : 2.3, FAST_DRIVE_POWER);
+							robot.returnToZero();
 
 							setState(STATE_SEARCHING);
 						}

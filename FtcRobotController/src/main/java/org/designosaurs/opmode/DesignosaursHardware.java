@@ -29,6 +29,8 @@ class DesignosaursHardware {
 	static final int COUNTS_PER_ROTATION = 7715;
 	static final int COUNTS_PER_FOOT = 2128;
 
+	static final int TURN_TOLERANCE = 1;
+
 	private ElapsedTime period = new ElapsedTime();
 	private SparseIntArray encoderOffsets = new SparseIntArray(3);
 
@@ -47,9 +49,11 @@ class DesignosaursHardware {
 			lift = hwMap.dcMotor.get("lift");
 			imu = new AdafruitBNO055IMU(hwMap.i2cDeviceSynch.get("imu"));
 
+			leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+			rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+			leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+			rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 			leftMotor.setDirection(DcMotor.Direction.REVERSE);
-			leftMotor.setPower(0);
-			rightMotor.setPower(0);
 
 			buttonPusher.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 			buttonPusher.setDirection(DcMotor.Direction.REVERSE);
@@ -140,8 +144,8 @@ class DesignosaursHardware {
 		resetEncoder(rightMotor);
 		updateOrientation();
 
-		primaryMotor = degrees > 0 ? rightMotor : leftMotor;
-		secondaryMotor = degrees > 0 ? leftMotor : rightMotor;
+		primaryMotor = degrees > 0 ? leftMotor : rightMotor;
+		secondaryMotor = degrees > 0 ? rightMotor : leftMotor;
 
 		Log.i(TAG, "Current rotation: " + decimalFormat.format(getHeading()));
 
@@ -161,7 +165,7 @@ class DesignosaursHardware {
 		primaryMotor.setPower(power);
 		secondaryMotor.setPower(-power);
 
-		while(degrees > 0 ? getHeading() <= targetDegrees : getHeading() >= targetDegrees)
+		while(Math.abs(getHeading() - targetDegrees) > TURN_TOLERANCE)
 			try {
 				Thread.sleep(15);
 				updateOrientation();
@@ -186,6 +190,7 @@ class DesignosaursHardware {
 	/*** Encoders ***/
 
 	void returnToZero() {
+		Log.i(TAG, "Zeroing...");
 		updateOrientation();
 
 		if(getHeading() > 180)
