@@ -1,5 +1,6 @@
 package org.designosaurs;
 
+import com.vuforia.CameraDevice;
 import com.vuforia.Frame;
 import com.vuforia.Image;
 import com.vuforia.PIXEL_FORMAT;
@@ -53,6 +54,7 @@ public class VuforiaLocalizerImplSubclass extends VuforiaLocalizerImpl {
 
 		Vuforia.setFrameFormat(PIXEL_FORMAT.RGB565, true);
 		Vuforia.setFrameFormat(PIXEL_FORMAT.GRAYSCALE, false);
+		CameraDevice.getInstance().setFlashTorchMode(true);
 	}
 
 	public void clearGlSurface() {

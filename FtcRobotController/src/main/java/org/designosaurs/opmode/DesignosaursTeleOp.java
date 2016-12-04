@@ -9,7 +9,7 @@ public class DesignosaursTeleOp extends LinearOpMode {
 	private DesignosaursHardware robot = new DesignosaursHardware();
 
 	private static final double JOYSTICK_DEADBAND = 0.2;
-	private static final double DRIVE_POWER = 1.0;
+	private static final double DRIVE_POWER = 0.7;
 	private static final double BUTTON_PUSHER_POWER = 0.5;
 
 	@Override

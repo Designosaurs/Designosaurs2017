@@ -270,7 +270,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 			switch(autonomousState) {
 				case STATE_SHOOTING:
-					robot.shooter.setPower(0.8);
+					robot.shooter.setPower(-0.8);
 					if(ticksInState >= 150) {
 						robot.shooter.setPower(0);
 						setState(STATE_INITIAL_POSITIONING);
@@ -287,15 +287,15 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 					if(teamColor == TEAM_RED) {
 						updateRunningState("Initial turn...");
-						robot.turn(-40, 0.3);
+						robot.turn(-35, 0.3);
 
 						updateRunningState("Secondary move...");
 						robot.accel(0.5, FAST_DRIVE_POWER);
-						robot.goStraight(1.75, FAST_DRIVE_POWER);
+						robot.goStraight(1.7, FAST_DRIVE_POWER);
 						robot.decel(0.5, 0.1);
 
 						updateRunningState("Secondary turn...");
-						robot.turn(39, TURN_POWER);
+						robot.turn(34, TURN_POWER);
 					} else {
 						updateRunningState("Initial turn...");
 						robot.turn(40, 0.3);
@@ -421,7 +421,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		switch(autonomousState) {
 			case STATE_SHOOTING:
 				return "shooting";
-			break;
 			case STATE_INITIAL_POSITIONING:
 				return "initial positioning";
 			case STATE_SEARCHING:
