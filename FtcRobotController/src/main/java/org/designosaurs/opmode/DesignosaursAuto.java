@@ -10,6 +10,7 @@ import android.util.Log;
 import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.vuforia.Matrix34F;
 import com.vuforia.Tool;
 import com.vuforia.Vec3F;
@@ -45,7 +46,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 	/* Configuration */
 	private static final double FAST_DRIVE_POWER = 0.85;
-	private static final double TURN_POWER = 0.4;
+	private static final double TURN_POWER = 0.35;
 	private static final double DRIVE_POWER = 0.25;
 	private static final double SLOW_DOWN_AT = 3000;
 	private static final int BEACON_ALIGNMENT_TOLERANCE = 100;
@@ -130,8 +131,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private void updateRunningState(String newStateMessage) {
 		stateMessage = newStateMessage;
 
-		if(teamColor == TEAM_UNSELECTED)
-			updateRunningState();
+		updateRunningState();
 	}
 
 	// Looped before start because IMU initializes asynchronously
@@ -142,7 +142,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		if(gamepad1.b)
 			teamColor = TEAM_RED;
 
-		setInitState("Ready!");
+		if(teamColor != TEAM_UNSELECTED)
+			setInitState("Ready!");
 	}
 
 	// Uses the separate OpenCV Manager app to shave a bit off the app size
@@ -190,7 +191,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		while(!isStarted() && !isStopRequested()) {
 			updateTeamColor();
 
-			robot.waitForTick(250);
+			robot.waitForTick(25);
 		}
 
 		if(DesignosaursHardware.hardwareEnabled) {
@@ -268,22 +269,37 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 			switch(autonomousState) {
 				case STATE_INITIAL_POSITIONING:
+					if(teamColor == TEAM_BLUE) {
+						robot.rightMotor.setDirection(DcMotor.Direction.REVERSE);
+						robot.leftMotor.setDirection(DcMotor.Direction.FORWARD);
+					}
+
 					updateRunningState("Accelerating...");
-					robot.accel(0.8, FAST_DRIVE_POWER);
+					robot.accel(0.8, 0.4);
 
-					updateRunningState("Initial turn...");
-					robot.turn(-40, TURN_POWER);
+					if(teamColor == TEAM_RED) {
+						updateRunningState("Initial turn...");
+						robot.turn(-40, 0.3);
 
-					updateRunningState("Secondary move...");
-					robot.accel(0.5, FAST_DRIVE_POWER);
-					robot.goStraight(1.7, FAST_DRIVE_POWER);
-					robot.decel(0.5, 0.1);
+						updateRunningState("Secondary move...");
+						robot.accel(0.5, FAST_DRIVE_POWER);
+						robot.goStraight(1.75, FAST_DRIVE_POWER);
+						robot.decel(0.5, 0.1);
 
-					updateRunningState("Secondary turn...");
-					robot.turn(40, TURN_POWER);
+						updateRunningState("Secondary turn...");
+						robot.turn(39, TURN_POWER);
+					} else {
+						updateRunningState("Initial turn...");
+						robot.turn(40, 0.3);
 
-					updateRunningState("Returning to zero...");
-					robot.returnToZero();
+						updateRunningState("Secondary move...");
+						robot.accel(0.5, FAST_DRIVE_POWER);
+						robot.goStraight(1.75, FAST_DRIVE_POWER);
+						robot.decel(0.5, 0.1);
+
+						updateRunningState("Secondary turn...");
+						robot.turn(-39, TURN_POWER);
+					}
 
 					setState(STATE_SEARCHING);
 				break;
@@ -303,7 +319,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 							robot.resetDriveEncoders();
 							targetSide = lastBeaconColor.getLeftColor() == targetColor ? SIDE_LEFT : SIDE_RIGHT;
-							robot.setDrivePower(-DRIVE_POWER);
 
 							setState(STATE_ALIGNING_WITH_BEACON);
 						} else {
@@ -346,9 +361,11 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						if(beaconsFound == 2)
 							setState(STATE_FINISHED);
 						else {
+							robot.returnToZero();
 							robot.turn(-1, TURN_POWER);
-
-							robot.goStraight(targetSide == SIDE_LEFT ? 3.5 : 3, FAST_DRIVE_POWER);
+							robot.accel(0.5, FAST_DRIVE_POWER);
+							robot.goStraight(targetSide == SIDE_LEFT ? 2 : 1.5, FAST_DRIVE_POWER);
+							robot.decel(0.5, DRIVE_POWER);
 							robot.returnToZero();
 
 							setState(STATE_SEARCHING);

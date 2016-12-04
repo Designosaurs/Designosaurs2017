@@ -6,8 +6,10 @@ import android.util.SparseIntArray;
 import com.qualcomm.hardware.adafruit.AdafruitBNO055IMU;
 import com.qualcomm.hardware.adafruit.BNO055IMU;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
@@ -32,7 +34,7 @@ class DesignosaursHardware {
 	static final int COUNTS_PER_FOOT = 2128;
 
 	// Threshold for when a turn is considered done
-	static final double TURN_TOLERANCE = 0.5;
+	static final double TURN_TOLERANCE = 1;
 
 	private ElapsedTime period = new ElapsedTime();
 	private SparseIntArray encoderOffsets = new SparseIntArray(3);
@@ -57,7 +59,6 @@ class DesignosaursHardware {
 			rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 			leftMotor.setDirection(DcMotor.Direction.REVERSE);
 
-			buttonPusher.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 			buttonPusher.setDirection(DcMotor.Direction.REVERSE);
 			buttonPusher.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
@@ -102,7 +103,7 @@ class DesignosaursHardware {
 
 	// Get current distance in feet based on the encoders, tolerant of one encoder failure
 	private double getDistance() {
-		return Math.max(getAdjustedEncoderPosition(leftMotor), getAdjustedEncoderPosition(rightMotor)) / COUNTS_PER_FOOT;
+		return (double) Math.max(getAdjustedEncoderPosition(leftMotor), getAdjustedEncoderPosition(rightMotor)) / COUNTS_PER_FOOT;
 	}
 
 	// Shortcut function
@@ -120,7 +121,7 @@ class DesignosaursHardware {
 	}
 
 	// Move the robot forward for the given number of feet, based on max encoder (we've had encoders die).
-	// Does not handle accel/decel, use those functions for that
+	// Does not handle accel/decel, use those functions for that. Blocking.
 	void goStraight(double feet, double power) {
 		Log.i(TAG, "Going for " + decimalFormat.format(feet) + " ft at " + (power * 100) + "% power...");
 
@@ -149,8 +150,13 @@ class DesignosaursHardware {
 		resetDriveEncoders();
 		updateOrientation();
 
-		primaryMotor = degrees > 0 ? leftMotor : rightMotor;
-		secondaryMotor = degrees > 0 ? rightMotor : leftMotor;
+		if(leftMotor.getDirection() == DcMotorSimple.Direction.FORWARD) {
+			primaryMotor = degrees > 0 ? rightMotor : leftMotor;
+			secondaryMotor = degrees > 0 ? leftMotor : rightMotor;
+		} else {
+			primaryMotor = degrees > 0 ? leftMotor : rightMotor;
+			secondaryMotor = degrees > 0 ? rightMotor : leftMotor;
+		}
 
 		Log.i(TAG, "Current rotation: " + decimalFormat.format(getHeading()));
 
@@ -182,34 +188,37 @@ class DesignosaursHardware {
 	}
 
 	// Curve amount
-	private static final double P_1 = 10/100.0f;
+	private static final double P_1 = 10/100;
 
 	// Bezier curve implementation, see https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B.C3.A9zier_curves
-	private static double qBezier(double t, double P_0, double P_2) {
+	private static double bezier(double t, double P_0, double P_2) {
 		return (t >= 0 ? 1 : -1) * ((1 - t) * ((1 - t) * P_0 + t * P_1) + t * ((1 - t) * P_1 + t * P_2));
 	}
 
-	// Accelerates in a quadratic bezier curve from 0.1 -> power
+	// Accelerates in a quadratic bezier curve from 0.3 -> power
 	void accel(double feet, double power) {
 		double progress;
 
 		resetDriveEncoders();
 		while(getDistance() <= feet) {
 			progress = getDistance() / feet;
-			setDrivePower(qBezier(progress, 0.1, power));
+
+			setDrivePower(bezier(progress, 0.3, power));
+			waitForTick(15);
 		}
 	}
 
 	// Decelerates from current max drive power to power
 	void decel(double feet, double power) {
 		double progress,
-				originalPower = Math.max(leftMotor.getPower(), rightMotor.getPower());
+			   originalPower = Math.max(leftMotor.getPower(), rightMotor.getPower());
 
 		resetDriveEncoders();
 		while(getDistance() <= feet) {
 			progress = 1 - (getDistance() / feet);
 
-			setDrivePower(qBezier(progress, power, originalPower));
+			setDrivePower(bezier(progress, power, originalPower));
+			waitForTick(15);
 		}
 	}
 
@@ -230,9 +239,9 @@ class DesignosaursHardware {
 		updateOrientation();
 
 		if(getHeading() > 180)
-			turn(360 - getHeading(), 0.3);
+			turn(360 - getHeading(), 0.2);
 		else
-			turn(-getHeading(), 0.3);
+			turn(-getHeading(), 0.2);
 
 		setDrivePower(0);
 	}
