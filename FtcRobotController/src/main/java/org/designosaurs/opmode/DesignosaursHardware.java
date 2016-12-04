@@ -9,7 +9,6 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
@@ -61,6 +60,8 @@ class DesignosaursHardware {
 
 			buttonPusher.setDirection(DcMotor.Direction.REVERSE);
 			buttonPusher.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
+			shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
 			lift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 

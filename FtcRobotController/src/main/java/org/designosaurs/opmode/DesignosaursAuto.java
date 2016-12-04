@@ -53,11 +53,12 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	public static final boolean SAVE_IMAGES = false;
 
 	/* State Machine */
-	private final byte STATE_INITIAL_POSITIONING = 0;
-	private final byte STATE_SEARCHING = 1;
-	private final byte STATE_ALIGNING_WITH_BEACON = 2;
-	private final byte STATE_WAITING_FOR_PLACER = 3;
-	private final byte STATE_FINISHED = 4;
+	private final byte STATE_SHOOTING = 0;
+	private final byte STATE_INITIAL_POSITIONING = 1;
+	private final byte STATE_SEARCHING = 2;
+	private final byte STATE_ALIGNING_WITH_BEACON = 3;
+	private final byte STATE_WAITING_FOR_PLACER = 4;
+	private final byte STATE_FINISHED = 5;
 
 	/* Team Colors */
 	private final byte TEAM_UNSELECTED = 0;
@@ -69,7 +70,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private final byte SIDE_RIGHT = 1;
 
 	/* Current State */
-	private byte autonomousState = STATE_INITIAL_POSITIONING;
+	private byte autonomousState = STATE_SHOOTING;
 	private int ticksInState = 0;
 	private String stateMessage = "Starting...";
 	private byte beaconsFound = 0;
@@ -268,6 +269,13 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			}
 
 			switch(autonomousState) {
+				case STATE_SHOOTING:
+					robot.shooter.setPower(0.8);
+					if(ticksInState >= 150) {
+						robot.shooter.setPower(0);
+						setState(STATE_INITIAL_POSITIONING);
+					}
+				break;
 				case STATE_INITIAL_POSITIONING:
 					if(teamColor == TEAM_BLUE) {
 						robot.rightMotor.setDirection(DcMotor.Direction.REVERSE);
@@ -411,6 +419,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	// Gets written to the driver station to explain the current state
 	private String getStateMessage() {
 		switch(autonomousState) {
+			case STATE_SHOOTING:
+				return "shooting";
+			break;
 			case STATE_INITIAL_POSITIONING:
 				return "initial positioning";
 			case STATE_SEARCHING:
