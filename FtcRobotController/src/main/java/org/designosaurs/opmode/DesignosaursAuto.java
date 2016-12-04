@@ -69,8 +69,12 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private final byte SIDE_LEFT = 0;
 	private final byte SIDE_RIGHT = 1;
 
+	/* Bad Field Adjustment */
+	private final byte BAD_FIELD_ADJUSTMENT_DISABLED = 0;
+	private final byte BAD_FIELD_ADJUSTMENT_ENABLED = 1;
+
 	/* Current State */
-	private byte autonomousState = STATE_SHOOTING;
+	private byte autonomousState = STATE_INITIAL_POSITIONING;
 	private int ticksInState = 0;
 	private String stateMessage = "Starting...";
 	private byte beaconsFound = 0;
@@ -79,6 +83,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private int centeredPos = Integer.MAX_VALUE;
 	private long lastTelemetryUpdate = 0;
 	private byte teamColor = TEAM_UNSELECTED;
+	private byte badFieldAdjustment = BAD_FIELD_ADJUSTMENT_DISABLED;
 	private byte targetSide = SIDE_LEFT;
 	private String lastScoredBeaconName = "";
 	private Context appContext;
@@ -109,6 +114,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		telemetry.addLine("");
 		telemetry.addLine("IMU: " + getIMUState());
 		telemetry.addLine("Team color: " + teamColorToString());
+		telemetry.addLine("Bad field adjustment: " + (badFieldAdjustment == BAD_FIELD_ADJUSTMENT_DISABLED ? "DISABLED" : "ENABLED"));
 		telemetry.update();
 	}
 
@@ -137,13 +143,29 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 	// Looped before start because IMU initializes asynchronously
 	private void updateTeamColor() {
-		if(gamepad1.x)
+		boolean changed = false;
+
+		if(gamepad1.x) {
+			changed = true;
 			teamColor = TEAM_BLUE;
+		}
 
-		if(gamepad1.b)
+		if(gamepad1.b) {
+			changed = true;
 			teamColor = TEAM_RED;
+		}
 
-		if(teamColor != TEAM_UNSELECTED)
+		if(gamepad1.y) {
+			changed = true;
+			badFieldAdjustment = BAD_FIELD_ADJUSTMENT_ENABLED;
+		}
+
+		if(gamepad1.a) {
+			changed = true;
+			badFieldAdjustment = BAD_FIELD_ADJUSTMENT_DISABLED;
+		}
+
+		if(changed)
 			setInitState("Ready!");
 	}
 
@@ -328,6 +350,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 							robot.resetDriveEncoders();
 							targetSide = lastBeaconColor.getLeftColor() == targetColor ? SIDE_LEFT : SIDE_RIGHT;
+							robot.setDrivePower(-DRIVE_POWER * 0.75);
 
 							setState(STATE_ALIGNING_WITH_BEACON);
 						} else {
@@ -350,7 +373,15 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 				case STATE_ALIGNING_WITH_BEACON:
 					stateMessage = "Positioning to deploy placer...";
 
-					if(Math.max(Math.abs(robot.getAdjustedEncoderPosition(robot.leftMotor)), Math.abs(robot.getAdjustedEncoderPosition(robot.rightMotor))) >= (targetSide == SIDE_LEFT ? 900 : 75)) {
+					if(ticksInState > 450)
+						robot.emergencyStop();
+
+					double targetCounts = (targetSide == SIDE_LEFT) ? 900 : 75;
+
+					if(badFieldAdjustment == BAD_FIELD_ADJUSTMENT_ENABLED)
+						targetCounts += 225;
+
+					if(Math.max(Math.abs(robot.getAdjustedEncoderPosition(robot.leftMotor)), Math.abs(robot.getAdjustedEncoderPosition(robot.rightMotor))) >= targetCounts) {
 						Log.i(TAG, "//// DEPLOYING ////");
 
 						robot.setDrivePower(0);
