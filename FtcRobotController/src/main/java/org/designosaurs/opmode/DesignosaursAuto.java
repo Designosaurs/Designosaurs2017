@@ -201,6 +201,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		}
 
 		beacons.activate();
+		vuforia.enableFlashlight();
 
 		while(opModeIsActive()) {
 			boolean havePixelData = false;
@@ -291,7 +292,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 						updateRunningState("Secondary move...");
 						robot.accel(0.5, FAST_DRIVE_POWER);
-						robot.goStraight(1.7, FAST_DRIVE_POWER);
+						robot.goStraight(1.67, FAST_DRIVE_POWER);
 						robot.decel(0.5, 0.1);
 
 						updateRunningState("Secondary turn...");

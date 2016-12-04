@@ -54,6 +54,9 @@ public class VuforiaLocalizerImplSubclass extends VuforiaLocalizerImpl {
 
 		Vuforia.setFrameFormat(PIXEL_FORMAT.RGB565, true);
 		Vuforia.setFrameFormat(PIXEL_FORMAT.GRAYSCALE, false);
+	}
+
+	public void enableFlashlight() {
 		CameraDevice.getInstance().setFlashTorchMode(true);
 	}
 
