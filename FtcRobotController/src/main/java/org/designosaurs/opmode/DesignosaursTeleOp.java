@@ -60,7 +60,7 @@ public class DesignosaursTeleOp extends LinearOpMode {
 				robot.leftMotor.setPower(left * DRIVE_POWER);
 				robot.rightMotor.setPower(right * DRIVE_POWER);
 				robot.buttonPusher.setPower(buttonPusher * BUTTON_PUSHER_POWER);
-				robot.lift.setPower(lift > 0 ? 1 : lift);
+				robot.lift.setPower(lift > 0 ? 0.7 : lift);
 
 				telemetry.clear();
 				telemetry.addLine("L power: " + decimalFormat.format(left));

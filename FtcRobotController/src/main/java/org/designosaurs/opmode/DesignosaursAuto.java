@@ -308,6 +308,10 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					updateRunningState("Accelerating...");
 					robot.accel(0.8, 0.4);
 
+					robot.turn(teamColor == TEAM_RED ? 7 : -7, 0.3);
+					robot.runShooter();
+					robot.turn(teamColor == TEAM_RED ? -7 : 7, 0.3);
+
 					if(teamColor == TEAM_RED) {
 						updateRunningState("Initial turn...");
 						robot.turn(-35, 0.3);

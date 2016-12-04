@@ -115,6 +115,13 @@ class DesignosaursHardware {
 		}
 	}
 
+	// Blocking running of the shooter
+	void runShooter() {
+		shooter.setPower(-0.8);
+		waitForTick(2000);
+		shooter.setPower(0);
+	}
+
 	// Shortcut function
 	void setButtonPusherPower(double power) {
 		if(hardwareEnabled)
