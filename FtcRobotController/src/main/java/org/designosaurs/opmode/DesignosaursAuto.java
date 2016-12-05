@@ -308,10 +308,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					updateRunningState("Accelerating...");
 					robot.accel(0.8, 0.4);
 
-					robot.turn(teamColor == TEAM_RED ? 7 : -7, 0.3);
-					robot.runShooter();
-					robot.turn(teamColor == TEAM_RED ? -7 : 7, 0.3);
-
 					if(teamColor == TEAM_RED) {
 						updateRunningState("Initial turn...");
 						robot.turn(-35, 0.3);
@@ -383,7 +379,12 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					double targetCounts = (targetSide == SIDE_LEFT) ? 900 : 75;
 
 					if(badFieldAdjustment == BAD_FIELD_ADJUSTMENT_ENABLED)
-						targetCounts += 225;
+						targetCounts -= 225;
+
+					if(targetCounts < 0) {
+						robot.goStraight(0.1, DRIVE_POWER);
+						targetCounts = 0;
+					}
 
 					if(Math.max(Math.abs(robot.getAdjustedEncoderPosition(robot.leftMotor)), Math.abs(robot.getAdjustedEncoderPosition(robot.rightMotor))) >= targetCounts) {
 						Log.i(TAG, "//// DEPLOYING ////");
@@ -488,6 +489,11 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 	// Offset here represents how far the camera is from the button pusher
 	private int getRelativePosition() {
-		return centeredPos - 350;
+		int result = centeredPos - 350;
+
+		if(teamColor == TEAM_BLUE)
+			result = -result;
+
+		return result;
 	}
 }
