@@ -4,35 +4,33 @@ import android.util.Log;
 
 import java.util.ArrayList;
 
-public class ButtonPusherManager extends Thread {
+public class ShooterManager extends Thread {
 	/* Configuration */
-	private static final double POWER = 0.25;
-	// Expected change in encoder counts per loop, used to detect whether it's home/stuck
-	private static final int MOVEMENT_THRESHOLD = 10;
-	// Target base position to return to after homing or scoring
-	private static final double TARGET_IDLE_POSITION = DesignosaursHardware.COUNTS_PER_REVOLUTION * 0.25;
-	// Allowance for the button pusher being in the home position, in encoder counts
-	private static final double AT_BASE_TOLERANCE = 50;
-	// Max value in encoder counts that the button pusher can go without going past the track
-	private static final double EXTEND_MAX = 3800;
+	// Power when aligning for the first
+	private static final double HOMING_POWER = 0.1;
+	// Power to shoot with
+	private static final double POWER = 1;
+	private static final double COUNTS_PER_ROTATION = DesignosaursHardware.COUNTS_PER_REVOLUTION * 1.2;
 
 	/* Available states */
-	static final byte STATE_HOMING = 0;
-	static final byte STATE_RETURNING_TO_BASE = 1;
-	static final byte STATE_AT_BASE = 2;
-	static final byte STATE_SCORING = 3;
+	static final byte STATE_AT_BASE = 0;
+	static final byte STATE_HOMING = 1;
+	static final byte STATE_SCORING = 2;
 
-	private byte state = -1;
-	private int lastPosition = 0;
-	private ArrayList<Integer> positionHistory = new ArrayList<>(40);
+	private byte state = STATE_AT_BASE;
 
 	private int ticksInState = 0;
 	private boolean isRunning = true;
+	private int lastPosition = 0;
+	private ArrayList<Integer> positionHistory = new ArrayList<>(40);
+
+	// Expected change in encoder counts per loop, used to detect whether it's home/stuck
+	private static final int MOVEMENT_THRESHOLD = 10;
 
 	private DesignosaursHardware robot;
-	private final String TAG = "ButtonPusherManager";
+	private final String TAG = "ShooterManager";
 
-	ButtonPusherManager(DesignosaursHardware robot) {
+	ShooterManager(DesignosaursHardware robot) {
 		this.robot = robot;
 	}
 
@@ -64,27 +62,14 @@ public class ButtonPusherManager extends Thread {
 
 		switch(state) {
 			case STATE_HOMING:
-				if(isStuck) {
-					robot.setButtonPusherPower(0);
-					robot.resetEncoder(robot.buttonPusher);
-
-					setStatus(STATE_RETURNING_TO_BASE);
-				}
-			break;
-			case STATE_RETURNING_TO_BASE:
-				// Tries to maintain button pusher at TARGET_IDLE_POSITION
-				double buttonPusherPositionDelta = robot.getAdjustedEncoderPosition(robot.buttonPusher) - TARGET_IDLE_POSITION;
-
-				if(Math.abs(buttonPusherPositionDelta) < AT_BASE_TOLERANCE) {
-					robot.setButtonPusherPower(0);
-
+				if(isStuck)
 					setStatus(STATE_AT_BASE);
-				} else
-					robot.setButtonPusherPower(robot.getAdjustedEncoderPosition(robot.buttonPusher) <= TARGET_IDLE_POSITION ? POWER : -POWER);
 			break;
 			case STATE_SCORING:
-				if(robot.getAdjustedEncoderPosition(robot.buttonPusher) >= EXTEND_MAX || isStuck)
-					setStatus(STATE_RETURNING_TO_BASE);
+				Log.i(TAG, String.valueOf(robot.getAdjustedEncoderPosition(robot.shooter)));
+
+				if(robot.getAdjustedEncoderPosition(robot.shooter) >= COUNTS_PER_ROTATION)
+					setStatus(STATE_AT_BASE);
 		}
 	}
 
@@ -111,8 +96,6 @@ public class ButtonPusherManager extends Thread {
 				return "homing...";
 			case STATE_AT_BASE:
 				return "at base";
-			case STATE_RETURNING_TO_BASE:
-				return "returning to base...";
 			case STATE_SCORING:
 				return "scoring...";
 		}
@@ -130,29 +113,29 @@ public class ButtonPusherManager extends Thread {
 		this.state = state;
 
 		positionHistory.clear();
-		for(int i = 1; i <= 80; i++)
+		for(int i = 1; i <= 100; i++)
 			positionHistory.add(10);
 
 		switch(state) {
+			case STATE_AT_BASE:
+				robot.setShooterPower(0);
+			break;
 			case STATE_HOMING:
-				robot.setButtonPusherPower(-POWER);
+				robot.setShooterPower(0);
+				robot.resetEncoder(robot.buttonPusher);
+
+				robot.setShooterPower(HOMING_POWER);
 			break;
 			case STATE_SCORING:
-				robot.setButtonPusherPower(POWER);
-				positionHistory.clear();
+				robot.resetEncoder(robot.shooter);
 
-				for(int i = 1; i <= 40; i++)
-					positionHistory.add(10);
+				robot.setShooterPower(POWER);
 		}
-	}
-
-	int getTicksInState() {
-		return ticksInState;
 	}
 
 	// Called when opmode cleanly shuts down
 	void shutdown() {
 		isRunning = false;
-		robot.setButtonPusherPower(0);
+		robot.setShooterPower(0);
 	}
 }

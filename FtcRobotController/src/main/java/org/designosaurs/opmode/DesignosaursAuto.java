@@ -10,7 +10,6 @@ import android.util.Log;
 import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.vuforia.Matrix34F;
 import com.vuforia.Tool;
 import com.vuforia.Vec3F;
@@ -38,6 +37,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private DesignosaursHardware robot = new DesignosaursHardware();
 	private BeaconProcessor beaconProcessor = new BeaconProcessor();
 	private ButtonPusherManager buttonPusherManager = new ButtonPusherManager(robot);
+	private ShooterManager shooterManager = new ShooterManager(robot);
 
 	// Whether to block out the garbage data in the center of the beacon, assuming that it's not taped
 	// The field setup guide says it should be taped on the inside, I have yet to see one configured as such
@@ -74,7 +74,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private final byte BAD_FIELD_ADJUSTMENT_ENABLED = 1;
 
 	/* Current State */
-	private byte autonomousState = STATE_INITIAL_POSITIONING;
+	private byte autonomousState = STATE_SHOOTING;
 	private int ticksInState = 0;
 	private String stateMessage = "Starting...";
 	private byte beaconsFound = 0;
@@ -88,6 +88,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private String lastScoredBeaconName = "";
 	private Context appContext;
 	private Mat output = null;
+	private VuforiaLocalizerImplSubclass vuforia = null;
+	private int ballsShot = 0;
 
 	// Interpret the initialization string returned by the IMU
 	private String getIMUState() {
@@ -197,7 +199,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		params.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
 		params.vuforiaLicenseKey = VUFORIA_LICENCE_KEY;
 
-		VuforiaLocalizerImplSubclass vuforia = new VuforiaLocalizerImplSubclass(params);
+		vuforia = new VuforiaLocalizerImplSubclass(params);
 
 		// Vuforia tracks the images, we'll call them beacons
 		VuforiaTrackables beacons = vuforia.loadTrackablesFromAsset("FTC_2016-17");
@@ -217,13 +219,14 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			robot.waitForTick(25);
 		}
 
+
 		if(DesignosaursHardware.hardwareEnabled) {
 			buttonPusherManager.start();
 			buttonPusherManager.setStatus(ButtonPusherManager.STATE_HOMING);
+			shooterManager.start();
 		}
 
 		beacons.activate();
-		vuforia.enableFlashlight();
 
 		while(opModeIsActive()) {
 			boolean havePixelData = false;
@@ -293,10 +296,15 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 			switch(autonomousState) {
 				case STATE_SHOOTING:
-					robot.shooter.setPower(-0.8);
-					if(ticksInState >= 150) {
-						robot.shooter.setPower(0);
-						setState(STATE_INITIAL_POSITIONING);
+					if(shooterManager.getStatus() == ShooterManager.STATE_AT_BASE) {
+						robot.waitForTick(1000);
+						if(ballsShot++ < 2) {
+							shooterManager.setStatus(ShooterManager.STATE_SCORING);
+						} else {
+							shooterManager.setStatus(ShooterManager.STATE_HOMING);
+
+							setState(STATE_INITIAL_POSITIONING);
+						}
 					}
 				break;
 				case STATE_INITIAL_POSITIONING:
@@ -442,6 +450,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			case STATE_SEARCHING:
 				robot.setDrivePower(DRIVE_POWER);
 				robot.startOrientationTracking();
+				vuforia.enableFlashlight();
 
 				stateMessage = "Searching for beacon...";
 			break;

@@ -6,7 +6,6 @@ import android.util.SparseIntArray;
 import com.qualcomm.hardware.adafruit.AdafruitBNO055IMU;
 import com.qualcomm.hardware.adafruit.BNO055IMU;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -62,6 +61,7 @@ class DesignosaursHardware {
 			buttonPusher.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
 			shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+			shooter.setDirection(DcMotor.Direction.REVERSE);
 
 			lift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
@@ -115,17 +115,16 @@ class DesignosaursHardware {
 		}
 	}
 
-	// Blocking running of the shooter
-	void runShooter() {
-		shooter.setPower(-0.8);
-		waitForTick(2000);
-		shooter.setPower(0);
-	}
-
 	// Shortcut function
 	void setButtonPusherPower(double power) {
 		if(hardwareEnabled)
 			buttonPusher.setPower(power);
+	}
+
+	// Shortcut function
+	void setShooterPower(double power) {
+		if(hardwareEnabled)
+			shooter.setPower(power);
 	}
 
 	// Move the robot forward for the given number of feet, based on max encoder (we've had encoders die).
@@ -158,7 +157,7 @@ class DesignosaursHardware {
 		resetDriveEncoders();
 		updateOrientation();
 
-		if(leftMotor.getDirection() == DcMotorSimple.Direction.FORWARD) {
+		if(leftMotor.getDirection() == DcMotor.Direction.FORWARD) {
 			primaryMotor = degrees > 0 ? rightMotor : leftMotor;
 			secondaryMotor = degrees > 0 ? leftMotor : rightMotor;
 		} else {
