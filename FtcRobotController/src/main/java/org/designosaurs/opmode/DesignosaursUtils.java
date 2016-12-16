@@ -1,9 +1,36 @@
 package org.designosaurs.opmode;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
+import android.net.wifi.WifiManager;
+
+import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.ByteOrder;
 
 class DesignosaursUtils {
+	static String getIpAddress(Context context) {
+		WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+		int ipAddress = wifiManager.getConnectionInfo().getIpAddress();
+
+		// Convert little-endian to big-endian if needed
+		if(ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN))
+			ipAddress = Integer.reverseBytes(ipAddress);
+
+		byte[] ipByteArray = BigInteger.valueOf(ipAddress).toByteArray();
+
+		String ipAddressString;
+		try {
+			ipAddressString = InetAddress.getByAddress(ipByteArray).getHostAddress();
+		} catch(UnknownHostException ex) {
+			ipAddressString = null;
+		}
+
+		return ipAddressString;
+	}
+
 	static Bitmap resize(Bitmap image, int maxWidth, int maxHeight) {
 		if(maxHeight > 0 && maxWidth > 0) {
 			int width = image.getWidth();

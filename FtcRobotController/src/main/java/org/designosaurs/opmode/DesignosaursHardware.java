@@ -17,7 +17,7 @@ import java.text.DecimalFormat;
 
 class DesignosaursHardware {
 	// Disable this to run the robot without sensors/motors, for testing image recognition
-	static final boolean hardwareEnabled = true;
+	static boolean hardwareEnabled = true;
 
 	/* Hardware goes here */
 	DcMotor leftMotor = null;
@@ -299,7 +299,9 @@ class DesignosaursHardware {
 
 	// Called when opmode is shut down
 	void shutdown() {
-		imu.stopAccelerationIntegration();
+		if(imu != null)
+			imu.stopAccelerationIntegration();
+
 		setDrivePower(0);
 	}
 }

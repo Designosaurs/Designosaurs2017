@@ -5,17 +5,21 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.net.wifi.WifiManager;
+import android.text.format.Formatter;
 import android.util.Log;
 
 import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.vuforia.Image;
 import com.vuforia.Matrix34F;
 import com.vuforia.Tool;
 import com.vuforia.Vec3F;
 
 import org.designosaurs.Vector2;
 import org.designosaurs.VuforiaLocalizerImplSubclass;
+import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
@@ -49,8 +53,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private static final double TURN_POWER = 0.35;
 	private static final double DRIVE_POWER = 0.4;
 	private static final double SLOW_DOWN_AT = 3000;
-	private static final int BEACON_ALIGNMENT_TOLERANCE = 100;
-	public static final boolean SAVE_IMAGES = false;
+	private static final int BEACON_ALIGNMENT_TOLERANCE = 50;
+	private static final boolean SAVE_IMAGES = false;
+	private static final boolean TEST_MODE = true;
 
 	/* State Machine */
 	private final byte STATE_SHOOTING = 0;
@@ -82,9 +87,10 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private byte targetSide = SIDE_LEFT;
 	private String lastScoredBeaconName = "";
 	private Context appContext;
-	private Mat output = null;
 	private VuforiaLocalizerImplSubclass vuforia = null;
 	private int ballsShot = 0;
+	private Image lastFrame;
+	private Matrix34F lastPose;
 
 	// Interpret the initialization string returned by the IMU
 	private String getIMUState() {
@@ -162,7 +168,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			switch(status) {
 				case LoaderCallbackInterface.SUCCESS:
 					Log.i(TAG, "OpenCV loaded successfully!");
-					output = new Mat();
 				break;
 				default:
 					Log.i(TAG, "OpenCV load failure.");
@@ -170,13 +175,77 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		}
 	};
 
+	private Mat getRegionAboveBeacon() {
+		Mat output = new Mat();
+
+		Vector2 upperLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-100, 260, 0))); // -127, 92, 0
+		Vector2 upperRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(100, 260, 0))); // 127, 92, 0
+		Vector2 lowerLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-100, 142, 0))); // -127, -92, 0
+		Vector2 lowerRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(100, 142, 0))); // 127, -92, 0
+
+		Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
+		bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
+
+		Vector2 start = new Vector2(Math.min(upperLeft.x, lowerLeft.x), Math.min(upperLeft.y, lowerLeft.y));
+		Vector2 end = new Vector2(Math.max(lowerRight.x, upperRight.x), Math.max(lowerRight.y, upperRight.y));
+
+		if(start.x < 0)
+			start.x = 0;
+
+		if(start.y < 0)
+			start.y = 0;
+
+		if(end.x > bm.getWidth())
+			end.x = bm.getWidth();
+
+		if(end.y > bm.getHeight())
+			end.y = bm.getHeight();
+
+		try {
+			// Pass the cropped portion of the detected image to OpenCV:
+			Bitmap croppedImage = Bitmap.createBitmap(bm, start.x, start.y, end.x, end.y);
+
+			Bitmap resizedbitmap = DesignosaursUtils.resize(croppedImage, croppedImage.getWidth() / 2, croppedImage.getHeight() / 2);
+			resizedbitmap = DesignosaursUtils.rotate(resizedbitmap, 90);
+
+			/*
+			if(OBFUSCATE_MIDDLE) {
+				Canvas canvas = new Canvas(resizedbitmap);
+				Paint paint = new Paint();
+				paint.setColor(Color.WHITE);
+
+				canvas.drawRect(resizedbitmap.getWidth() * 12 / 30, 0, resizedbitmap.getWidth() * 17 / 30, resizedbitmap.getHeight(), paint);
+			}
+			*/
+
+			FtcRobotControllerActivity.simpleController.setImage(resizedbitmap);
+
+			Utils.bitmapToMat(resizedbitmap, output);
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+
+		return output;
+	}
+
 
 	// This is where the main logic block lives
 	@Override
 	public void runOpMode() {
+		appContext = hardwareMap.appContext;
+
+		if(TEST_MODE) {
+			DesignosaursHardware.hardwareEnabled = false;
+
+			Log.i(TAG, "*** TEST MODE ENABLED ***");
+			Log.i(TAG, "Hardware is disabled, skipping to beacon search state.");
+			Log.i(TAG, "Web debugging interface can be found at http://" + DesignosaursUtils.getIpAddress(appContext) + ":9001/");
+
+			autonomousState = STATE_SEARCHING;
+		}
+
 		setInitState("Configuring hardware...");
 		robot.init(hardwareMap);
-		appContext = hardwareMap.appContext;
 
 		setInitState("Initializing vuforia...");
 		VuforiaLocalizer.Parameters params = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
@@ -193,7 +262,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		beacons.get(3).setName("gears");
 
 		setInitState("Initializing OpenCV...");
-		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_1_0, hardwareMap.appContext, mLoaderCallback);
+		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_1_0, appContext, mLoaderCallback);
 
 		setInitState("Select team color using the gamepad.");
 
@@ -202,7 +271,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 			robot.waitForTick(25);
 		}
-
 
 		if(DesignosaursHardware.hardwareEnabled) {
 			buttonPusherManager.start();
@@ -213,7 +281,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		beacons.activate();
 
 		while(opModeIsActive()) {
-			boolean havePixelData = false;
 			String beaconName = "";
 
 			// Detect and process images
@@ -231,50 +298,10 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					rawPose.setData(poseData);
 
 					Vector2 center = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(0, 0, 0)));
-					Vector2 upperLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(-100, 260, 0))); // -127, 92, 0
-					Vector2 upperRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(100, 260, 0))); // 127, 92, 0
-					Vector2 lowerLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(-100, 142, 0))); // -127, -92, 0
-					Vector2 lowerRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(100, 142, 0))); // 127, -92, 0
-
 					centeredPos = center.y; // drive routines align based on this
 
-					if(vuforia.rgb == null)
-						continue;
-
-					Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
-					bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
-
-					Vector2 start = new Vector2(Math.max(0, Math.min(upperLeft.x, lowerLeft.x)), Math.min(bm.getHeight() - 1, Math.max(0, Math.min(upperLeft.y, upperRight.y))));
-					Vector2 end = new Vector2(Math.min(bm.getWidth(), Math.max(lowerRight.x, upperRight.x)), Math.min(bm.getHeight() - 1, Math.max(0, Math.max(lowerLeft.y, lowerRight.y))));
-
-					if(end.x - start.x == 0 || end.y - start.y == 0)
-						continue;
-
-					try {
-						// Pass the cropped portion of the detected image to OpenCV:
-						Bitmap a = Bitmap.createBitmap(bm, start.x, start.y, end.x, end.y);
-
-						Bitmap resizedbitmap = DesignosaursUtils.resize(a, a.getWidth() / 2, a.getHeight() / 2);
-						resizedbitmap = DesignosaursUtils.rotate(resizedbitmap, 90);
-
-						if(OBFUSCATE_MIDDLE) {
-							Canvas canvas = new Canvas(resizedbitmap);
-							Paint paint = new Paint();
-							paint.setColor(Color.WHITE);
-
-							canvas.drawRect(resizedbitmap.getWidth() * 12 / 30, 0, resizedbitmap.getWidth() * 17 / 30, resizedbitmap.getHeight(), paint);
-						}
-
-						// TODO: Fix web debugging view
-						//FtcRobotControllerActivity.simpleController.setImage(resizedbitmap);
-						//FtcRobotControllerActivity.simpleController.setImage2(bm);
-
-						Utils.bitmapToMat(resizedbitmap, output);
-
-						havePixelData = true;
-					} catch(Exception e) {
-						e.printStackTrace();
-					}
+					lastFrame = vuforia.rgb;
+					lastPose = rawPose;
 				}
 			}
 
@@ -292,6 +319,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					}
 				break;
 				case STATE_INITIAL_POSITIONING:
+					robot.startOrientationTracking();
+
 					if(teamColor == TEAM_BLUE) {
 						robot.rightMotor.setDirection(DcMotor.Direction.REVERSE);
 						robot.leftMotor.setDirection(DcMotor.Direction.FORWARD);
@@ -330,28 +359,20 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
 						stateMessage = "Analysing beacon data...";
 
-						if(havePixelData) {
-							robot.setDrivePower(0);
-							stateMessage = "Beacon found!";
+						robot.setDrivePower(0);
+						stateMessage = "Beacon found!";
 
-							BeaconColorResult lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), output, SAVE_IMAGES).getResult();
-							BeaconColorResult.BeaconColor targetColor = (teamColor == TEAM_RED ? BeaconColorResult.BeaconColor.RED : BeaconColorResult.BeaconColor.BLUE);
+						BeaconColorResult lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), getRegionAboveBeacon(), SAVE_IMAGES).getResult();
+						BeaconColorResult.BeaconColor targetColor = (teamColor == TEAM_RED ? BeaconColorResult.BeaconColor.RED : BeaconColorResult.BeaconColor.BLUE);
 
-							Log.i(TAG, "*** BEACON FOUND ***");
-							Log.i(TAG, "Target color: " + (targetColor == BeaconColorResult.BeaconColor.BLUE ? "Blue" : "Red"));
+						Log.i(TAG, "*** BEACON FOUND ***");
+						Log.i(TAG, "Target color: " + (targetColor == BeaconColorResult.BeaconColor.BLUE ? "Blue" : "Red"));
 
-							robot.resetDriveEncoders();
-							targetSide = lastBeaconColor.getLeftColor() == targetColor ? SIDE_LEFT : SIDE_RIGHT;
-							robot.setDrivePower(-DRIVE_POWER * 0.75);
+						robot.resetDriveEncoders();
+						targetSide = lastBeaconColor.getLeftColor() == targetColor ? SIDE_LEFT : SIDE_RIGHT;
+						robot.setDrivePower(-DRIVE_POWER * 0.75);
 
-							setState(STATE_ALIGNING_WITH_BEACON);
-						} else {
-							// Slow down, assuming the camera can't see the whole beacon yet
-							robot.setDrivePower(0.25);
-							stateMessage = "Waiting for conversion...";
-
-							Log.i(TAG, "Beacon seen, but unable to pass data to OpenCV.");
-						}
+						setState(STATE_ALIGNING_WITH_BEACON);
 					} else if(Math.abs(getRelativePosition()) < SLOW_DOWN_AT) {
 						stateMessage = "Beacon seen, centering (" + String.valueOf(getRelativePosition()) + ")...";
 						robot.resetDriveEncoders();
@@ -369,11 +390,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						robot.emergencyStop();
 
 					double targetCounts = (targetSide == SIDE_LEFT) ? 900 : 75;
-
-					if(targetCounts < 0) {
-						robot.goStraight(0.1, DRIVE_POWER);
-						targetCounts = 0;
-					}
 
 					if(Math.max(Math.abs(robot.getAdjustedEncoderPosition(robot.leftMotor)), Math.abs(robot.getAdjustedEncoderPosition(robot.rightMotor))) >= targetCounts) {
 						Log.i(TAG, "//// DEPLOYING ////");
@@ -418,6 +434,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	public void onStop() {
 		Log.i(TAG, "*** SHUTTING DOWN ***");
 		buttonPusherManager.shutdown();
+		shooterManager.shutdown();
 		robot.shutdown();
 	}
 
@@ -430,7 +447,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		switch(newState) {
 			case STATE_SEARCHING:
 				robot.setDrivePower(DRIVE_POWER);
-				robot.startOrientationTracking();
 				vuforia.enableFlashlight();
 
 				stateMessage = "Searching for beacon...";
