@@ -47,7 +47,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	/* Configuration */
 	private static final double FAST_DRIVE_POWER = 0.85;
 	private static final double TURN_POWER = 0.35;
-	private static final double DRIVE_POWER = 0.25;
+	private static final double DRIVE_POWER = 0.4;
 	private static final double SLOW_DOWN_AT = 3000;
 	private static final int BEACON_ALIGNMENT_TOLERANCE = 100;
 	public static final boolean SAVE_IMAGES = false;
@@ -347,7 +347,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 							setState(STATE_ALIGNING_WITH_BEACON);
 						} else {
 							// Slow down, assuming the camera can't see the whole beacon yet
-							robot.setDrivePower(0.2);
+							robot.setDrivePower(0.25);
 							stateMessage = "Waiting for conversion...";
 
 							Log.i(TAG, "Beacon seen, but unable to pass data to OpenCV.");
