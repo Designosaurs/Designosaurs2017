@@ -69,10 +69,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private final byte SIDE_LEFT = 0;
 	private final byte SIDE_RIGHT = 1;
 
-	/* Bad Field Adjustment */
-	private final byte BAD_FIELD_ADJUSTMENT_DISABLED = 0;
-	private final byte BAD_FIELD_ADJUSTMENT_ENABLED = 1;
-
 	/* Current State */
 	private byte autonomousState = STATE_SHOOTING;
 	private int ticksInState = 0;
@@ -83,7 +79,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private int centeredPos = Integer.MAX_VALUE;
 	private long lastTelemetryUpdate = 0;
 	private byte teamColor = TEAM_UNSELECTED;
-	private byte badFieldAdjustment = BAD_FIELD_ADJUSTMENT_DISABLED;
 	private byte targetSide = SIDE_LEFT;
 	private String lastScoredBeaconName = "";
 	private Context appContext;
@@ -116,7 +111,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		telemetry.addLine("");
 		telemetry.addLine("IMU: " + getIMUState());
 		telemetry.addLine("Team color: " + teamColorToString());
-		telemetry.addLine("Bad field adjustment: " + (badFieldAdjustment == BAD_FIELD_ADJUSTMENT_DISABLED ? "DISABLED" : "ENABLED"));
 		telemetry.update();
 	}
 
@@ -155,16 +149,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		if(gamepad1.b) {
 			changed = true;
 			teamColor = TEAM_RED;
-		}
-
-		if(gamepad1.y) {
-			changed = true;
-			badFieldAdjustment = BAD_FIELD_ADJUSTMENT_ENABLED;
-		}
-
-		if(gamepad1.a) {
-			changed = true;
-			badFieldAdjustment = BAD_FIELD_ADJUSTMENT_DISABLED;
 		}
 
 		if(changed)
@@ -385,9 +369,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						robot.emergencyStop();
 
 					double targetCounts = (targetSide == SIDE_LEFT) ? 900 : 75;
-
-					if(badFieldAdjustment == BAD_FIELD_ADJUSTMENT_ENABLED)
-						targetCounts -= 225;
 
 					if(targetCounts < 0) {
 						robot.goStraight(0.1, DRIVE_POWER);
