@@ -59,7 +59,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.qualcomm.ftccommon.AboutActivity;
-import com.qualcomm.ftccommon.ClassManagerFactory;
 import com.qualcomm.ftccommon.Device;
 import com.qualcomm.ftccommon.FtcEventLoop;
 import com.qualcomm.ftccommon.FtcEventLoopIdle;
@@ -69,7 +68,7 @@ import com.qualcomm.ftccommon.FtcRobotControllerSettingsActivity;
 import com.qualcomm.ftccommon.LaunchActivityConstantsList;
 import com.qualcomm.ftccommon.Restarter;
 
-import org.designosaurs.SimpleController;
+import org.designosaurs.WebServer;
 import org.firstinspires.ftc.ftccommon.external.SoundPlayingRobotMonitor;
 
 import com.qualcomm.ftccommon.UpdateUI;
@@ -140,7 +139,7 @@ public class FtcRobotControllerActivity extends Activity {
 	protected FtcEventLoop eventLoop;
 	protected Queue<UsbDevice> receivedUsbAttachmentNotifications;
 
-	public static SimpleController simpleController;
+	public static WebServer webServer;
 	public static final int PERMISSION_REQUEST_CODE = 1;
 
 	protected class RobotRestarter implements Restarter {
@@ -251,12 +250,12 @@ public class FtcRobotControllerActivity extends Activity {
 			while((line = reader.readLine()) != null)
 				out.append(line);
 
-			simpleController = new SimpleController();
+			webServer = new WebServer();
 
-			SimpleController.page = out.toString();
+			WebServer.page = out.toString();
 		} catch(IOException e) {
-			Log.e("SimpleController", "The web server has fallen!");
-			Log.e("SimpleController", e.getMessage());
+			Log.e("WebServer", "The web server has fallen!");
+			Log.e("WebServer", e.getMessage());
 		}
 		////////////// THE COOL WEBSERVER IS ABOVE //////////////
 

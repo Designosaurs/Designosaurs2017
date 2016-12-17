@@ -2,11 +2,6 @@ package org.designosaurs.opmode;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.net.wifi.WifiManager;
-import android.text.format.Formatter;
 import android.util.Log;
 
 import com.qualcomm.ftcrobotcontroller.R;
@@ -56,6 +51,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private static final int BEACON_ALIGNMENT_TOLERANCE = 50;
 	private static final boolean SAVE_IMAGES = false;
 	private static final boolean TEST_MODE = true;
+	private static final boolean ENABLE_CAMERA_STREAMING = true;
 
 	/* State Machine */
 	private final byte STATE_SHOOTING = 0;
@@ -91,6 +87,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private int ballsShot = 0;
 	private Image lastFrame;
 	private Matrix34F lastPose;
+	private long lastFrameSentAt = 0;
 
 	// Interpret the initialization string returned by the IMU
 	private String getIMUState() {
@@ -218,7 +215,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			}
 			*/
 
-			FtcRobotControllerActivity.simpleController.setImage(resizedbitmap);
+			//FtcRobotControllerActivity.webServer.setImage(resizedbitmap);
 
 			Utils.bitmapToMat(resizedbitmap, output);
 		} catch(Exception e) {
@@ -303,6 +300,16 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					lastFrame = vuforia.rgb;
 					lastPose = rawPose;
 				}
+			}
+
+			if(vuforia.rgb != null && ENABLE_CAMERA_STREAMING && System.currentTimeMillis() > (lastFrameSentAt + 50)) {
+				lastFrameSentAt = System.currentTimeMillis();
+
+				Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
+				bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
+
+				Bitmap resizedbitmap = DesignosaursUtils.resize(bm, bm.getWidth() / 2, bm.getHeight() / 2);
+				FtcRobotControllerActivity.webServer.streamCameraFrame(DesignosaursUtils.rotate(resizedbitmap, 90));
 			}
 
 			switch(autonomousState) {

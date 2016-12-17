@@ -1,77 +1,66 @@
 package org.designosaurs;
 
+import android.util.Log;
+
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.NanoWSD;
 
 import fi.iki.elonen.NanoWSD.WebSocketFrame.CloseCode;
 
 
-public class WebsocketServer extends NanoWSD {
-	private static final Logger LOG = Logger.getLogger(WebsocketServer.class.getName());
+class WebsocketServer extends NanoWSD.WebSocket {
+	private WebServer server;
 
-	private final boolean debug;
+	private String TAG = "WebsocketServer";
 
-	public WebsocketServer(int port, boolean debug) {
-		super(port);
-
-		this.debug = debug;
+	WebsocketServer(WebServer server, NanoHTTPD.IHTTPSession handshakeRequest) {
+		super(handshakeRequest);
+		this.server = server;
 	}
 
 	@Override
-	protected WebSocket openWebSocket(IHTTPSession handshake) {
-		return new WebsocketInstance(this, handshake);
+	protected void onOpen() {
+		Log.i(TAG, "Client connected!");
 	}
 
-	private static class WebsocketInstance extends WebSocket {
-		private final WebsocketServer server;
+	@Override
+	protected void onClose(CloseCode code, String reason, boolean initiatedByRemote) {
+		Log.i(TAG, "Client disconnected" + (initiatedByRemote ? "" : " (server initiated)."));
 
-
-		public WebsocketInstance(WebsocketServer server, IHTTPSession handshakeRequest) {
-			super(handshakeRequest);
-			this.server = server;
+		if(server.debug) {
+			System.out.println("C [" + (initiatedByRemote ? "Remote" : "Self") + "] " + (code != null ? code : "UnknownCloseCode[" + code + "]")
+					+ (reason != null && !reason.isEmpty() ? ": " + reason : ""));
 		}
+	}
 
-		@Override
-		protected void onOpen() {
+	@Override
+	protected void onMessage(NanoWSD.WebSocketFrame message) {
+		message.setUnmasked();
+	}
 
-		}
+	@Override
+	protected void onPong(NanoWSD.WebSocketFrame pong) {
+		if(server.debug)
+			System.out.println("Pong: " + pong);
+	}
 
-		@Override
-		protected void onClose(CloseCode code, String reason, boolean initiatedByRemote) {
-			if (server.debug) {
-				System.out.println("C [" + (initiatedByRemote ? "Remote" : "Self") + "] " + (code != null ? code : "UnknownCloseCode[" + code + "]")
-						+ (reason != null && !reason.isEmpty() ? ": " + reason : ""));
-			}
-		}
+	@Override
+	protected void onException(IOException exception) {
+		Log.e(TAG, "An exception occurred:");
+		exception.printStackTrace();
+	}
 
-		@Override
-		protected void onMessage(WebSocketFrame message) {
-            message.setUnmasked();
-		}
+	@Override
+	protected void debugFrameReceived(NanoWSD.WebSocketFrame frame) {
+		/*if(server.debug)
+			System.out.println("Recv: " + frame);*/
+	}
 
-		@Override
-		protected void onPong(WebSocketFrame pong) {
-			if(server.debug)
-				System.out.println("Pong: " + pong);
-		}
-
-		@Override
-		protected void onException(IOException exception) {
-			WebsocketServer.LOG.log(Level.SEVERE, "exception occurred", exception);
-		}
-
-		@Override
-		protected void debugFrameReceived(WebSocketFrame frame) {
-			if(server.debug)
-				System.out.println("Recv: " + frame);
-		}
-
-		@Override
-		protected void debugFrameSent(WebSocketFrame frame) {
-			if(server.debug)
-				System.out.println("Send: " + frame);
-		}
+	@Override
+	protected void debugFrameSent(NanoWSD.WebSocketFrame frame) {
+		/*if(server.debug)
+			System.out.println("Send: " + frame);*/
 	}
 }
