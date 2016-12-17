@@ -5,6 +5,7 @@ import android.util.Base64;
 import android.util.Log;
 import android.util.SparseArray;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.opencv.android.Utils;
 import org.opencv.core.CvException;
@@ -48,16 +49,11 @@ public class WebServer extends NanoWSD {
 		return server;
 	}
 
-
-	public void streamCameraFrame(Bitmap bmp) {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        bmp.compress(Bitmap.CompressFormat.JPEG, 40, byteArrayOutputStream);
-        byte[] byteArray = byteArrayOutputStream.toByteArray();
-
+	public void send(String event, Object data) {
 		try {
 			JSONObject message = new JSONObject();
-			message.put("event", "frame.camera");
-			message.put("data", Base64.encodeToString(byteArray, Base64.DEFAULT));
+			message.put("event", event);
+			message.put("data", data);
 
 			for(int i = 0, nsize = clients.size(); i < nsize; i++) {
 				WebsocketServer server = clients.valueAt(i);
@@ -68,7 +64,19 @@ public class WebServer extends NanoWSD {
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void streamCameraFrame(Bitmap bmp) {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        bmp.compress(Bitmap.CompressFormat.JPEG, 40, byteArrayOutputStream);
+        byte[] byteArray = byteArrayOutputStream.toByteArray();
+
+		send("camera.frame", Base64.encodeToString(byteArray, Base64.DEFAULT));
     }
+
+	public void streamPoints(ArrayList<String> coords) {
+		send("camera.points", new JSONArray(coords));
+	}
 
     @Override
     public Response serveHttp(IHTTPSession session) {

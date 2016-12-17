@@ -26,6 +26,7 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import ftc.vision.BeaconColorResult;
@@ -88,6 +89,13 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private Image lastFrame;
 	private Matrix34F lastPose;
 	private long lastFrameSentAt = 0;
+
+	/* Pose Tracking Points */
+	private Vector2 upperLeft;
+	private Vector2 upperRight;
+	private Vector2 lowerLeft;
+	private Vector2 lowerRight;
+	private Vector2 center;
 
 	// Interpret the initialization string returned by the IMU
 	private String getIMUState() {
@@ -172,13 +180,18 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		}
 	};
 
+	private void recalculateCriticalPoints() {
+		if(lastPose != null) {
+			upperLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-100, 260, 0))); // -127, 92, 0
+			upperRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(100, 260, 0))); // 127, 92, 0
+			lowerLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-100, 142, 0))); // -127, -92, 0
+			lowerRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(100, 142, 0))); // 127, -92, 0
+			center = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(0, 0, 0)));
+		}
+	}
+
 	private Mat getRegionAboveBeacon() {
 		Mat output = new Mat();
-
-		Vector2 upperLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-100, 260, 0))); // -127, 92, 0
-		Vector2 upperRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(100, 260, 0))); // 127, 92, 0
-		Vector2 lowerLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-100, 142, 0))); // -127, -92, 0
-		Vector2 lowerRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(100, 142, 0))); // 127, -92, 0
 
 		Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
 		bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
@@ -293,12 +306,11 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					Matrix34F rawPose = new Matrix34F();
 					float[] poseData = Arrays.copyOfRange(pose.transposed().getData(), 0, 12);
 					rawPose.setData(poseData);
-
-					Vector2 center = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(0, 0, 0)));
-					centeredPos = center.y; // drive routines align based on this
-
 					lastFrame = vuforia.rgb;
 					lastPose = rawPose;
+
+					recalculateCriticalPoints();
+					centeredPos = center.y; // drive routines align based on this
 				}
 			}
 
@@ -310,6 +322,16 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 				Bitmap resizedbitmap = DesignosaursUtils.resize(bm, bm.getWidth() / 2, bm.getHeight() / 2);
 				FtcRobotControllerActivity.webServer.streamCameraFrame(DesignosaursUtils.rotate(resizedbitmap, 90));
+
+				if(lowerLeft != null) {
+					ArrayList<String> coords = new ArrayList<>(4);
+					coords.add(lowerLeft.toString());
+					coords.add(lowerRight.toString());
+					coords.add(upperLeft.toString());
+					coords.add(upperRight.toString());
+
+					FtcRobotControllerActivity.webServer.streamPoints(coords);
+				}
 			}
 
 			switch(autonomousState) {
@@ -363,6 +385,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					setState(STATE_SEARCHING);
 				break;
 				case STATE_SEARCHING:
+					/*
 					if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
 						stateMessage = "Analysing beacon data...";
 
@@ -388,7 +411,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 							robot.setDrivePower(DRIVE_POWER * -0.5);
 						else
 							robot.setDrivePower(DRIVE_POWER * 0.5);
-					}
+					}*/
 				break;
 				case STATE_ALIGNING_WITH_BEACON:
 					stateMessage = "Positioning to deploy placer...";
