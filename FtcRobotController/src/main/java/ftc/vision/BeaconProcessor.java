@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
+	public static final boolean DEBUG = false;
 	private static final String TAG = "BeaconProcessor";
 	private static final double MIN_MASS = 6;
 
@@ -108,31 +109,39 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 			}
 
 		}
-		//add empty alpha channel
-		rgbaChannels.add(Mat.zeros(hsv.size(), CvType.CV_8UC1));
-		//merge the 3 binary images and 1 alpha channel into one image
-		Core.merge(rgbaChannels, rgbaFrame);
+
+		if(DEBUG) {
+			//add empty alpha channel
+			rgbaChannels.add(Mat.zeros(hsv.size(), CvType.CV_8UC1));
+			//merge the 3 binary images and 1 alpha channel into one image
+			Core.merge(rgbaChannels, rgbaFrame);
+		}
 
 		//use the maxIndex array to get the left and right colors
 		BeaconColorResult.BeaconColor[] beaconColors = BeaconColorResult.BeaconColor.values();
 		BeaconColorResult.BeaconColor left = beaconColors[maxMassIndex[0]];
 		BeaconColorResult.BeaconColor right = beaconColors[maxMassIndex[1]];
 
-		//draw the color result bars
-		int barHeight = hsv.height() / 30;
-		Imgproc.rectangle(rgbaFrame, new Point(0, 0), new Point(hsv.width() / 2, barHeight), left.color, barHeight);
-		Imgproc.rectangle(rgbaFrame, new Point(hsv.width() / 2, 0), new Point(hsv.width(), barHeight), right.color, barHeight);
-
+		if(DEBUG) {
+			//draw the color result bars
+			int barHeight = hsv.height() / 30;
+			Imgproc.rectangle(rgbaFrame, new Point(0, 0), new Point(hsv.width() / 2, barHeight), left.color, barHeight);
+			Imgproc.rectangle(rgbaFrame, new Point(hsv.width() / 2, 0), new Point(hsv.width(), barHeight), right.color, barHeight);
+		}
 		if(saveImages) {
 			ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, "1_binary", startTime);
 		}
 
-		Mat output = rgbaFrame.clone();
+		if(DEBUG) {
+			Mat output = rgbaFrame.clone();
 
-		overlayImage(rgbaFrameBak, rgbaFrame, output);
+			overlayImage(rgbaFrameBak, rgbaFrame, output);
 
-		//construct and return the result
-		return new ImageProcessorResult<>(startTime, output, new BeaconColorResult(left, right));
+			//construct and return the result
+			return new ImageProcessorResult<>(startTime, output, new BeaconColorResult(left, right));
+		} else {
+			return new ImageProcessorResult<>(startTime, null, new BeaconColorResult(left, right));
+		}
 	}
 
 	public void overlayImage(Mat background, Mat foreground, Mat output) {

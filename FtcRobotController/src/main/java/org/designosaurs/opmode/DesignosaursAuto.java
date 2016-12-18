@@ -207,11 +207,23 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		if(start.y < 0)
 			start.y = 0;
 
+		if(start.x > bm.getWidth())
+			start.x = bm.getWidth();
+
+		if(start.y > bm.getHeight())
+			start.y = bm.getHeight();
+
 		if(end.x > bm.getWidth())
 			end.x = bm.getWidth();
 
 		if(end.y > bm.getHeight())
 			end.y = bm.getHeight();
+
+		if(start.x < 0)
+			start.x = 0;
+
+		if(start.y < 0)
+			start.y = 0;
 
 		try {
 			// Pass the cropped portion of the detected image to OpenCV:
@@ -329,6 +341,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					ArrayList<String> coords = new ArrayList<>(4);
 					coords.add(lowerLeft.toString());
 					coords.add(lowerRight.toString());
+					coords.add(upperLeft.toString());
+					coords.add(upperRight.toString());
+					coords.add(center.toString());
 
 					FtcRobotControllerActivity.webServer.streamPoints(coords);
 				}
@@ -385,7 +400,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					setState(STATE_SEARCHING);
 				break;
 				case STATE_SEARCHING:
-					/*
+
 					if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
 						stateMessage = "Analysing beacon data...";
 
@@ -411,7 +426,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 							robot.setDrivePower(DRIVE_POWER * -0.5);
 						else
 							robot.setDrivePower(DRIVE_POWER * 0.5);
-					}*/
+					}
 				break;
 				case STATE_ALIGNING_WITH_BEACON:
 					stateMessage = "Positioning to deploy placer...";
