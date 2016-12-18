@@ -96,6 +96,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private Vector2 lowerLeft;
 	private Vector2 lowerRight;
 	private Vector2 center;
+	private Vector2 start;
+	private Vector2 end;
 
 	// Interpret the initialization string returned by the IMU
 	private String getIMUState() {
@@ -182,11 +184,14 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 	private void recalculateCriticalPoints() {
 		if(lastPose != null) {
-			upperLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-100, 260, 0))); // -127, 92, 0
-			upperRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(100, 260, 0))); // 127, 92, 0
-			lowerLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-100, 142, 0))); // -127, -92, 0
-			lowerRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(100, 142, 0))); // 127, -92, 0
+			upperLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-120, 260, 0))); // -127, 92, 0
+			upperRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(120, 260, 0))); // 127, 92, 0
+			lowerLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-120, 142, 0))); // -127, -92, 0
+			lowerRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(120, 142, 0))); // 127, -92, 0
 			center = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(0, 0, 0)));
+
+			start = new Vector2(Math.min(upperLeft.x, lowerLeft.x), Math.min(upperLeft.y, lowerLeft.y));
+			end = new Vector2(Math.max(lowerRight.x, upperRight.x), Math.max(lowerRight.y, upperRight.y));
 		}
 	}
 
@@ -195,9 +200,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 		Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
 		bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
-
-		Vector2 start = new Vector2(Math.min(upperLeft.x, lowerLeft.x), Math.min(upperLeft.y, lowerLeft.y));
-		Vector2 end = new Vector2(Math.max(lowerRight.x, upperRight.x), Math.max(lowerRight.y, upperRight.y));
 
 		if(start.x < 0)
 			start.x = 0;
@@ -321,14 +323,12 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 				bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
 
 				Bitmap resizedbitmap = DesignosaursUtils.resize(bm, bm.getWidth() / 2, bm.getHeight() / 2);
-				FtcRobotControllerActivity.webServer.streamCameraFrame(DesignosaursUtils.rotate(resizedbitmap, 90));
+				FtcRobotControllerActivity.webServer.streamCameraFrame(resizedbitmap);
 
 				if(lowerLeft != null) {
 					ArrayList<String> coords = new ArrayList<>(4);
 					coords.add(lowerLeft.toString());
 					coords.add(lowerRight.toString());
-					coords.add(upperLeft.toString());
-					coords.add(upperRight.toString());
 
 					FtcRobotControllerActivity.webServer.streamPoints(coords);
 				}
