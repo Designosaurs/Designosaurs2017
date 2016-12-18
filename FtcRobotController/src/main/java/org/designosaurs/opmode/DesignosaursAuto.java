@@ -2,6 +2,9 @@ package org.designosaurs.opmode;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.util.Log;
 
 import com.qualcomm.ftcrobotcontroller.R;
@@ -50,7 +53,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private static final double DRIVE_POWER = 0.4;
 	private static final double SLOW_DOWN_AT = 3000;
 	private static final int BEACON_ALIGNMENT_TOLERANCE = 50;
-	private static final boolean SAVE_IMAGES = false;
+	private static final boolean SAVE_IMAGES = true;
 	private static final boolean TEST_MODE = true;
 	private static final boolean ENABLE_CAMERA_STREAMING = true;
 
@@ -70,6 +73,10 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	/* Beacon Sides */
 	private final byte SIDE_LEFT = 0;
 	private final byte SIDE_RIGHT = 1;
+
+	/* Camera Configuration */
+	private final int IMAGE_WIDTH = 1280;
+	private final int IMAGE_HEIGHT = 720;
 
 	/* Current State */
 	private byte autonomousState = STATE_SHOOTING;
@@ -91,10 +98,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private long lastFrameSentAt = 0;
 
 	/* Pose Tracking Points */
-	private Vector2 upperLeft;
-	private Vector2 upperRight;
-	private Vector2 lowerLeft;
-	private Vector2 lowerRight;
 	private Vector2 center;
 	private Vector2 start;
 	private Vector2 end;
@@ -184,50 +187,67 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 	private void recalculateCriticalPoints() {
 		if(lastPose != null) {
-			upperLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-120, 260, 0))); // -127, 92, 0
-			upperRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(120, 260, 0))); // 127, 92, 0
-			lowerLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-120, 142, 0))); // -127, -92, 0
-			lowerRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(120, 142, 0))); // 127, -92, 0
+			start = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(180, 280, 0))); // 127, 92, 0
+			end = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-180, 142, 0))); // -127, -92, 0
 			center = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(0, 0, 0)));
 
-			start = new Vector2(Math.min(upperLeft.x, lowerLeft.x), Math.min(upperLeft.y, lowerLeft.y));
-			end = new Vector2(Math.max(lowerRight.x, upperRight.x), Math.max(lowerRight.y, upperRight.y));
+			//upperLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-120, 280, 0))); // -127, 92, 0
+			//lowerRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(120, 142, 0))); // 127, -92, 0
 		}
+	}
+	
+	private void boundPoints() {
+		if(start.x < 0)
+			start.x = 0;
+
+		if(start.y < 0)
+			start.y = 0;
+
+		if(end.x < 0)
+			end.x = 0;
+
+		if(end.y < 0)
+			end.y = 0;
+
+		if(start.x > IMAGE_WIDTH)
+			start.x = IMAGE_WIDTH;
+
+		if(start.y > IMAGE_HEIGHT)
+			start.y = IMAGE_HEIGHT;
+
+		if(end.x > IMAGE_WIDTH)
+			end.x = IMAGE_WIDTH;
+
+		if(end.y > IMAGE_HEIGHT)
+			end.y = IMAGE_HEIGHT;
 	}
 
 	private Mat getRegionAboveBeacon() {
+		// Timing is wrong ಠ_ಠ
+		if(vuforia.rgb == null || start == null || end == null)
+			return null;
+
 		Mat output = new Mat();
 
 		Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
 		bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
 
-		if(start.x < 0)
-			start.x = 0;
+		if(end.x - start.x <= 0 || end.y - start.y <= 0) {
+			Log.i(TAG, "Failing beacon recognition call because of improper viewport!");
+			Log.i(TAG, "start: " + start.toString());
+			Log.i(TAG, "end: " + end.toString());
+			Log.i(TAG, "dX: " + (end.x - start.x));
+			Log.i(TAG, "dY: " + (end.y - start.y));
 
-		if(start.y < 0)
-			start.y = 0;
+			return null;
+		}
 
-		if(start.x > bm.getWidth())
-			start.x = bm.getWidth();
-
-		if(start.y > bm.getHeight())
-			start.y = bm.getHeight();
-
-		if(end.x > bm.getWidth())
-			end.x = bm.getWidth();
-
-		if(end.y > bm.getHeight())
-			end.y = bm.getHeight();
-
-		if(start.x < 0)
-			start.x = 0;
-
-		if(start.y < 0)
-			start.y = 0;
+		Log.i(TAG, start.toString());
+		Log.i(TAG, end.toString());
 
 		try {
 			// Pass the cropped portion of the detected image to OpenCV:
-			Bitmap croppedImage = Bitmap.createBitmap(bm, start.x, start.y, end.x, end.y);
+			Bitmap croppedImage = Bitmap.createBitmap(bm, start.x, start.y, end.x - start.x, end.y - start.y);
 
 			Bitmap resizedbitmap = DesignosaursUtils.resize(croppedImage, croppedImage.getWidth() / 2, croppedImage.getHeight() / 2);
 			resizedbitmap = DesignosaursUtils.rotate(resizedbitmap, 90);
@@ -247,6 +267,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			Utils.bitmapToMat(resizedbitmap, output);
 		} catch(Exception e) {
 			e.printStackTrace();
+
+			return null;
 		}
 
 		return output;
@@ -324,6 +346,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					lastPose = rawPose;
 
 					recalculateCriticalPoints();
+					boundPoints();
 					centeredPos = center.y; // drive routines align based on this
 				}
 			}
@@ -337,12 +360,10 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 				Bitmap resizedbitmap = DesignosaursUtils.resize(bm, bm.getWidth() / 2, bm.getHeight() / 2);
 				FtcRobotControllerActivity.webServer.streamCameraFrame(resizedbitmap);
 
-				if(lowerLeft != null) {
+				if(center != null) {
 					ArrayList<String> coords = new ArrayList<>(4);
-					coords.add(lowerLeft.toString());
-					coords.add(lowerRight.toString());
-					coords.add(upperLeft.toString());
-					coords.add(upperRight.toString());
+					coords.add(start.toString());
+					coords.add(end.toString());
 					coords.add(center.toString());
 
 					FtcRobotControllerActivity.webServer.streamPoints(coords);
@@ -407,7 +428,15 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						robot.setDrivePower(0);
 						stateMessage = "Beacon found!";
 
-						BeaconColorResult lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), getRegionAboveBeacon(), SAVE_IMAGES).getResult();
+						Mat image = getRegionAboveBeacon();
+						if(image == null || vuforia.rgb == null) {
+							Log.w(TAG, "No frame! ॓_॔");
+							robot.setDrivePower(0.15);
+
+							continue;
+						}
+
+						BeaconColorResult lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), image, SAVE_IMAGES).getResult();
 						BeaconColorResult.BeaconColor targetColor = (teamColor == TEAM_RED ? BeaconColorResult.BeaconColor.RED : BeaconColorResult.BeaconColor.BLUE);
 
 						Log.i(TAG, "*** BEACON FOUND ***");
