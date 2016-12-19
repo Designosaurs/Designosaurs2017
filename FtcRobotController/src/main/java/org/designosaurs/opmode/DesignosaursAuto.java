@@ -446,7 +446,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						Imgproc.resize(croppedImageRaw, croppedImage, new Size(), 0.5, 0.5, Imgproc.INTER_LINEAR);
 
 						if(OBFUSCATE_MIDDLE)
-							Imgproc.rectangle(croppedImage, new Point(croppedImage.width() - 75, 0), new Point(croppedImage.width() + 75, croppedImage.height()), new Scalar(255, 255, 255, 255), -1);;
+							Imgproc.rectangle(croppedImage, new Point((croppedImage.width() / 2) - 75, 0), new Point((croppedImage.width() / 2) + 75, croppedImage.height()), new Scalar(255, 255, 255, 255), -1);;
 
 						BeaconColorResult lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), croppedImage, SAVE_IMAGES).getResult();
 						BeaconColorResult.BeaconColor targetColor = (teamColor == TEAM_RED ? BeaconColorResult.BeaconColor.RED : BeaconColorResult.BeaconColor.BLUE);
