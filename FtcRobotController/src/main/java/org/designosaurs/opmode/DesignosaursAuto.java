@@ -415,9 +415,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 				case STATE_SEARCHING:
 					if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
 						stateMessage = "Analysing beacon data...";
-
 						robot.setDrivePower(0);
-						stateMessage = "Beacon found!";
 
 						Mat image = getRegionAboveBeacon();
 						if(image == null || vuforia.rgb == null) {
@@ -427,15 +425,29 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 							continue;
 						}
 
-						BeaconPositionResult lastBeaconPosition = beaconFinder.process(System.currentTimeMillis(), image, SAVE_IMAGES).getResult();
-						int[] range = lastBeaconPosition.getRangePixels();
-						if(range[0] < 0)
-							range[0] = 0;
+						byte pass = 0;
+						boolean successful = false;
 
-						if(range[1] > image.width())
-							range[1] = image.width();
+						while(!successful) {
+							BeaconPositionResult lastBeaconPosition = beaconFinder.process(System.currentTimeMillis(), image, SAVE_IMAGES).getResult();
+							int[] range = lastBeaconPosition.getRangePixels();
+							if(range[0] < 0)
+								range[0] = 0;
 
-						Log.i(TAG, "Beacon finder results: " + lastBeaconPosition.toString());
+							if(range[1] > image.width())
+								range[1] = image.width();
+
+							Log.i(TAG, "Beacon finder results: " + lastBeaconPosition.toString());
+
+							if(lastBeaconPosition.isConclusive())
+								successful = true;
+							else {
+								pass++;
+
+								robot.goStraight(pass == 1 ? -0.3 : 0.6, DRIVE_POWER);
+								robot.setDrivePower(0);
+							}
+						}
 
 						// Change the values in the following line for how much off the larger image we crop (y-wise,
 						// the x axis is controlled by where the robot thinks the beacon is, see BeaconFinder).
@@ -446,7 +458,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						Imgproc.resize(croppedImageRaw, croppedImage, new Size(), 0.5, 0.5, Imgproc.INTER_LINEAR);
 
 						if(OBFUSCATE_MIDDLE)
-							Imgproc.rectangle(croppedImage, new Point((croppedImage.width() / 2) - 75, 0), new Point((croppedImage.width() / 2) + 75, croppedImage.height()), new Scalar(255, 255, 255, 255), -1);;
+							Imgproc.rectangle(croppedImage, new Point((croppedImage.width() / 2) - 35, 0), new Point((croppedImage.width() / 2) + 55, croppedImage.height()), new Scalar(255, 255, 255, 255), -1);
 
 						BeaconColorResult lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), croppedImage, SAVE_IMAGES).getResult();
 						BeaconColorResult.BeaconColor targetColor = (teamColor == TEAM_RED ? BeaconColorResult.BeaconColor.RED : BeaconColorResult.BeaconColor.BLUE);

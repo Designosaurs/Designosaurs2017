@@ -92,9 +92,10 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
         // get points of buttons
         double leftButton = 0,
                rightButton = 0,
-               average;
+               average,
+               buttonsFound = 0;
 
-        for (int i = 0; i < circles.cols(); i++) {
+        for(int i = 0; i < circles.cols(); i++) {
             double data[] = circles.get(0, i);
 
             if(DEBUG) {
@@ -106,6 +107,8 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
                 leftButton = data[0];
             else
                 rightButton = data[0];
+
+            buttonsFound++;
         }
 
         average = Math.floor(((rightButton - leftButton) / 2) + leftButton);
@@ -117,6 +120,6 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
 
         Log.i(TAG, "Processing finished, took " + (System.currentTimeMillis() - startTime) + "ms");
 
-        return new ImageProcessorResult<>(startTime, null, new BeaconPositionResult(average, leftButton - BEACON_CROP_DISTANCE, rightButton + BEACON_CROP_DISTANCE));
+        return new ImageProcessorResult<>(startTime, null, new BeaconPositionResult(buttonsFound == 2, average, leftButton - BEACON_CROP_DISTANCE, rightButton + BEACON_CROP_DISTANCE));
     }
 }
