@@ -249,7 +249,7 @@ public class ImageUtil {
 	 * @param v HSV value (0 to 255)
 	 * @return OpenCV RGB Scalar
 	 */
-	public static Scalar HSVtoRGB(double h, double s, double v) {
+	static Scalar HSVtoRGB(double h, double s, double v) {
 		double r, g, b;
 		int i;
 		double f, p, q, t;
@@ -292,5 +292,21 @@ public class ImageUtil {
 				break;
 		}
 		return new Scalar(r, g, b);
+	}
+
+	static void overlayImage(Mat background, Mat foreground, Mat output) {
+		background.copyTo(output);
+		Mat dst = new Mat();
+		Imgproc.resize(foreground, dst, background.size());
+		for(int y = 0; y < background.rows(); ++y) {
+			for(int x = 0; x < background.cols(); ++x) {
+				double info[] = dst.get(y, x);
+
+				if(info[0] == 255 || info[1] == 255 || info[2] == 255) {
+					double infof[] = dst.get(y, x);
+					output.put(y, x, infof);
+				}
+			}
+		}
 	}
 }

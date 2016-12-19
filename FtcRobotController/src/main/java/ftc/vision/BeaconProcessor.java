@@ -14,13 +14,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
 	private static final String TAG = "BeaconProcessor";
 	private static final double MIN_MASS = 6;
 
 	@Override
 	public ImageProcessorResult<BeaconColorResult> process(long startTime, Mat rgbaFrame, boolean saveImages) {
-		Log.i(TAG, "*** STARTING FRAME PROCESSING ***");
+		Log.i(TAG, "*** STARTING BEACON FRAME PROCESSING ***");
 
 		Mat rgbaFrameBak = rgbaFrame.clone();
 		//save the image in the Pictures directory
@@ -28,8 +28,7 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 			ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, "0_camera", startTime);
 
 		// convert image to hsv
-		Mat hsv = new Mat(),
-			bakhsv = new Mat();
+		Mat hsv = new Mat();
 
 		Imgproc.cvtColor(rgbaFrame, hsv, Imgproc.COLOR_RGB2HSV);
 		// rgbaFrame is untouched; hsv now contains the same image but using HSV colors
@@ -52,9 +51,6 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 
 		hsvMin.add(new Scalar(60 / 2, 50, 150)); // green min
 		hsvMax.add(new Scalar(180 / 2, 255, 255)); // green max
-
-		hsvMin.add(new Scalar(0, 0, 0)); // black min
-		hsvMax.add(new Scalar(179, 255, 30)); // black max
 
 		hsvMin.add(new Scalar(180 / 2, 50, 150)); // blue min
 		hsvMax.add(new Scalar(300 / 2, 255, 255)); // blue max
@@ -83,31 +79,11 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 
 		//loop through the filters
 		for(int i = 0; i <= 3; i++) {
-			//apply HSV thresholds
+			// apply HSV thresholds
 			maskedImage = new Mat();
 			ImageUtil.hsvInRange(hsv, hsvMin.get(i), hsvMax.get(i), maskedImage);
 
-			if(i != 2)
-				rgbaChannels.add(maskedImage); // copy the binary image to a channel of rgbaChannels
-
-			/*
-			if(i == 0) {
-				Log.i(TAG, "Saving red levels to Pictures directory...");
-				ImageUtil.saveImage(TAG, maskedImage, Imgproc.COLOR_RGBA2BGR, "0_red", startTime);
-			}
-
-			if(i == 2) {
-				Log.i(TAG, "Saving blue levels to Pictures directory...");
-				ImageUtil.saveImage(TAG, maskedImage, Imgproc.COLOR_RGBA2BGR, "0_blue", startTime);
-			}
-			*/
-
-			if(i == 2) {
-				//Log.i(TAG, "Saving black levels to Pictures directory...");
-				//ImageUtil.saveImage(TAG, maskedImage, Imgproc.COLOR_RGBA2BGR, "0_black", startTime);
-
-				continue;
-			}
+			rgbaChannels.add(maskedImage); // copy the binary image to a channel of rgbaChannels
 
 			//apply a column sum to the (unscaled) binary image
 			Core.reduce(maskedImage, colSum, 0, Core.REDUCE_SUM, 4);
@@ -135,11 +111,7 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 				start = end;
 				end = hsv.width();
 			}
-
-			bakhsv = hsv;
 		}
-
-		hsv = bakhsv;
 
 		if(DEBUG) {
 			//add empty alpha channel
@@ -156,8 +128,8 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 		if(DEBUG) {
 			//draw the color result bars
 			int barHeight = (int) Math.max(Math.ceil(hsv.height() / 30), 5);
-			//Imgproc.rectangle(rgbaFrame, new Point(0, 0), new Point(hsv.width() / 2, barHeight), left.color, barHeight);
-			//Imgproc.rectangle(rgbaFrame, new Point(hsv.width() / 2, 0), new Point(hsv.width(), barHeight), right.color, barHeight);
+			Imgproc.rectangle(rgbaFrame, new Point(0, 0), new Point(hsv.width() / 2, barHeight), left.color, barHeight);
+			Imgproc.rectangle(rgbaFrame, new Point(hsv.width() / 2, 0), new Point(hsv.width(), barHeight), right.color, barHeight);
 		}
 
 		Log.i(TAG, "Processing finished, took " + (System.currentTimeMillis() - startTime) + "ms");
@@ -165,32 +137,15 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 		if(DEBUG) {
 			Mat output = rgbaFrame.clone();
 
-			overlayImage(rgbaFrameBak, rgbaFrame, output);
+			ImageUtil.overlayImage(rgbaFrameBak, rgbaFrame, output);
 
-			if(saveImages) {
+			if(saveImages)
 				ImageUtil.saveImage(TAG, output, Imgproc.COLOR_RGBA2BGR, "0_processed", startTime);
-			}
 
 			//construct and return the result
 			return new ImageProcessorResult<>(startTime, output, new BeaconColorResult(left, right));
 		} else {
 			return new ImageProcessorResult<>(startTime, null, new BeaconColorResult(left, right));
-		}
-	}
-
-	public void overlayImage(Mat background, Mat foreground, Mat output) {
-		background.copyTo(output);
-		Mat dst = new Mat();
-		Imgproc.resize(foreground, dst, background.size());
-		for(int y = 0; y < background.rows(); ++y) {
-			for(int x = 0; x < background.cols(); ++x) {
-				double info[] = dst.get(y, x);
-
-				if(info[0] == 255 || info[1] == 255 || info[2] == 255) {
-					double infof[] = dst.get(y, x);
-					output.put(y, x, infof);
-				}
-			}
 		}
 	}
 }
