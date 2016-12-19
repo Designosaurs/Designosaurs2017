@@ -29,6 +29,8 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.Rect;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,7 +59,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private static final double DRIVE_POWER = 0.4;
 	private static final double SLOW_DOWN_AT = 3000;
 	private static final int BEACON_ALIGNMENT_TOLERANCE = 50;
-	private static final boolean SAVE_IMAGES = true;
+	private static final boolean SAVE_IMAGES = false;
 	private static final boolean TEST_MODE = true;
 	private static final boolean ENABLE_CAMERA_STREAMING = true;
 	private static final String TAG = "DesignosaursAuto";
@@ -195,8 +197,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 	private void recalculateCriticalPoints() {
 		if(lastPose != null) {
-			start = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(180, 280, 0))); // 127, 92, 0
-			end = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-180, 142, 0))); // -127, -92, 0
+			start = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(180, 320, 0))); // 127, 92, 0
+			end = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-180, 180, 0))); // -127, -92, 0
 			center = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(0, 0, 0)));
 
 			//upperLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-120, 280, 0))); // -127, 92, 0
@@ -250,15 +252,10 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			return null;
 		}
 
-		Log.i(TAG, start.toString());
-		Log.i(TAG, end.toString());
-
 		try {
 			// Pass the cropped portion of the detected image to OpenCV:
 			Bitmap croppedImage = Bitmap.createBitmap(bm, start.x, start.y, end.x - start.x, end.y - start.y);
-
-			Bitmap resizedbitmap = DesignosaursUtils.resize(croppedImage, croppedImage.getWidth() / 2, croppedImage.getHeight() / 2);
-			resizedbitmap = DesignosaursUtils.rotate(resizedbitmap, 90);
+			croppedImage = DesignosaursUtils.rotate(croppedImage, 90);
 
 			/*
 			if(OBFUSCATE_MIDDLE) {
@@ -270,7 +267,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			}
 			*/
 
-			Utils.bitmapToMat(resizedbitmap, output);
+			Utils.bitmapToMat(croppedImage, output);
 		} catch(Exception e) {
 			e.printStackTrace();
 
@@ -443,11 +440,16 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 						BeaconPositionResult lastBeaconPosition = beaconFinder.process(System.currentTimeMillis(), image, SAVE_IMAGES).getResult();
 						int[] range = lastBeaconPosition.getRangePixels();
+						Log.i(TAG, "Beacon finder results: " + lastBeaconPosition.toString());
 
 						// Change the values in the following line for how much off the larger image we crop (y-wise,
 						// the x axis is controlled by where the robot thinks the beacon is, see BeaconFinder).
 						// TODO: Tune this based on actual field
-						Mat croppedImage = new Mat(image, new Rect(range[0], 0, range[1] - range[0], image.height() > 120 ? image.height() - 120 : image.height()));
+						Log.i(TAG, "Source image is " + image.height() + "px by " + image.width() + "px");
+						Mat croppedImageRaw = new Mat(image, new Rect(range[0], 0, range[1] - range[0], image.height() > 75 ? image.height() - 75 : image.height()));
+						Mat croppedImage = new Mat();
+						Imgproc.resize(croppedImageRaw, croppedImage, new Size(), 0.5, 0.5, Imgproc.INTER_LINEAR);
+
 						BeaconColorResult lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), croppedImage, SAVE_IMAGES).getResult();
 						BeaconColorResult.BeaconColor targetColor = (teamColor == TEAM_RED ? BeaconColorResult.BeaconColor.RED : BeaconColorResult.BeaconColor.BLUE);
 

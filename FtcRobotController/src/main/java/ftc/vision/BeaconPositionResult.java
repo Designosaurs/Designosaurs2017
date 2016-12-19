@@ -29,6 +29,6 @@ public class BeaconPositionResult {
 
 	@Override
 	public String toString() {
-		return "BeaconPositionResult (" + deltaX + "px)";
+		return "Offset is " + getOffsetEncoderCounts() + " encoder counts. Beacon exists from [" + startX + ", " + endX + "] px.";
 	}
 }
