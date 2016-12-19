@@ -28,7 +28,9 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
@@ -200,9 +202,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			start = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(220, 320, 0))); // 127, 92, 0
 			end = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-220, 180, 0))); // -127, -92, 0
 			center = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(0, 0, 0)));
-
-			//upperLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-120, 280, 0))); // -127, 92, 0
-			//lowerRight = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(120, 142, 0))); // 127, -92, 0
 		}
 	}
 	
@@ -253,19 +252,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		}
 
 		try {
-			// Pass the cropped portion of the detected image to OpenCV:
+			// Pass the region above the image to OpenCV:
 			Bitmap croppedImage = Bitmap.createBitmap(bm, start.x, start.y, end.x - start.x, end.y - start.y);
 			croppedImage = DesignosaursUtils.rotate(croppedImage, 90);
-
-			/*
-			if(OBFUSCATE_MIDDLE) {
-				Canvas canvas = new Canvas(resizedbitmap);
-				Paint paint = new Paint();
-				paint.setColor(Color.WHITE);
-
-				canvas.drawRect(resizedbitmap.getWidth() * 12 / 30, 0, resizedbitmap.getWidth() * 17 / 30, resizedbitmap.getHeight(), paint);
-			}
-			*/
 
 			Utils.bitmapToMat(croppedImage, output);
 		} catch(Exception e) {
@@ -455,6 +444,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						Mat croppedImageRaw = new Mat(image, new Rect(range[0], 0, range[1] - range[0], image.height() > 50 ? image.height() - 50 : image.height()));
 						Mat croppedImage = new Mat();
 						Imgproc.resize(croppedImageRaw, croppedImage, new Size(), 0.5, 0.5, Imgproc.INTER_LINEAR);
+
+						if(OBFUSCATE_MIDDLE)
+							Imgproc.rectangle(croppedImage, new Point(croppedImage.width() - 75, 0), new Point(croppedImage.width() + 75, croppedImage.height()), new Scalar(255, 255, 255, 255), -1);;
 
 						BeaconColorResult lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), croppedImage, SAVE_IMAGES).getResult();
 						BeaconColorResult.BeaconColor targetColor = (teamColor == TEAM_RED ? BeaconColorResult.BeaconColor.RED : BeaconColorResult.BeaconColor.BLUE);
