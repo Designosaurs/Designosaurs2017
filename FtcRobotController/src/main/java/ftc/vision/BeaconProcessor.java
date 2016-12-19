@@ -20,12 +20,12 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 
 	@Override
 	public ImageProcessorResult<BeaconColorResult> process(long startTime, Mat rgbaFrame, boolean saveImages) {
-		Log.i(TAG, "*** STARTING BEACON FRAME PROCESSING ***");
+		Log.i(TAG, "*** STARTING BEACON COLOR DETECTION FRAME PROCESSING ***");
 
 		Mat rgbaFrameBak = rgbaFrame.clone();
 		//save the image in the Pictures directory
 		if(saveImages)
-			ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, "0_camera", startTime);
+			ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, "1_camera", startTime);
 
 		// convert image to hsv
 		Mat hsv = new Mat();
@@ -140,7 +140,7 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 			ImageUtil.overlayImage(rgbaFrameBak, rgbaFrame, output);
 
 			if(saveImages)
-				ImageUtil.saveImage(TAG, output, Imgproc.COLOR_RGBA2BGR, "0_processed", startTime);
+				ImageUtil.saveImage(TAG, output, Imgproc.COLOR_RGBA2BGR, "1_processed", startTime);
 
 			//construct and return the result
 			return new ImageProcessorResult<>(startTime, output, new BeaconColorResult(left, right));
