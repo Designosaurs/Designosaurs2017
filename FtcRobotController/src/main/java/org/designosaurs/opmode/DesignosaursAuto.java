@@ -28,34 +28,43 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
+import org.opencv.core.Rect;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import ftc.vision.BeaconColorResult;
+import ftc.vision.BeaconFinder;
+import ftc.vision.BeaconPositionResult;
 import ftc.vision.BeaconProcessor;
+import ftc.vision.ImageUtil;
 
 @Autonomous(name = "Designosaurs Autonomous", group = "Auto")
 public class DesignosaursAuto extends DesignosaursOpMode {
+	/* Hardware */
 	private DesignosaursHardware robot = new DesignosaursHardware();
-	private BeaconProcessor beaconProcessor = new BeaconProcessor();
 	private ButtonPusherManager buttonPusherManager = new ButtonPusherManager(robot);
 	private ShooterManager shooterManager = new ShooterManager(robot);
 
-	// Whether to block out the garbage data in the center of the beacon, assuming that it's not taped
-	// The field setup guide says it should be taped on the inside, I have yet to see one configured as such
-	private final boolean OBFUSCATE_MIDDLE = true;
-	private final String VUFORIA_LICENCE_KEY = "ATwI0oz/////AAAAGe9HyiYVEU6pmTFAb65tOfUrioTxlZtITHRLN1h3wllaw67kJsUOHwPVDsCN0vxiKy/9Qi9NnjpkVfUnn0gwIHyKJgTYkG7+dCaJtFJlY94qa1YPCy0y4rwhVQFkDkcaCiNoiS7ZSU5KLeIABF4Gvz9qYwJJtwxWGp4fbjyu+arTOUw160+Fg5XMjoftS8FAQPx4wF33sVdGw+CYX0fHdwQzOyN0PpIwBQ9xvb8e1c76FoHF0YUZyV/q0XeR97nRj1TfnesPc+v7Z72SEDCXAAdVVS6L9u/mVAxq4zTaXsdGcVsqHeaouoGmQ/1Ey/YYShqHaRZXWwC4GsgaxO9tCkWNH+hTjFZA2pgvKVl5HmLR";
+	/* Image Processors */
+	private BeaconFinder beaconFinder = new BeaconFinder();
+	private BeaconProcessor beaconProcessor = new BeaconProcessor();
 
 	/* Configuration */
 	private static final double FAST_DRIVE_POWER = 0.85;
 	private static final double TURN_POWER = 0.35;
+	private static final double MIN_DRIVE_POWER = 0.15;
 	private static final double DRIVE_POWER = 0.4;
 	private static final double SLOW_DOWN_AT = 3000;
 	private static final int BEACON_ALIGNMENT_TOLERANCE = 50;
 	private static final boolean SAVE_IMAGES = true;
 	private static final boolean TEST_MODE = true;
 	private static final boolean ENABLE_CAMERA_STREAMING = true;
+	private static final String TAG = "DesignosaursAuto";
+	private static final String VUFORIA_LICENCE_KEY = "ATwI0oz/////AAAAGe9HyiYVEU6pmTFAb65tOfUrioTxlZtITHRLN1h3wllaw67kJsUOHwPVDsCN0vxiKy/9Qi9NnjpkVfUnn0gwIHyKJgTYkG7+dCaJtFJlY94qa1YPCy0y4rwhVQFkDkcaCiNoiS7ZSU5KLeIABF4Gvz9qYwJJtwxWGp4fbjyu+arTOUw160+Fg5XMjoftS8FAQPx4wF33sVdGw+CYX0fHdwQzOyN0PpIwBQ9xvb8e1c76FoHF0YUZyV/q0XeR97nRj1TfnesPc+v7Z72SEDCXAAdVVS6L9u/mVAxq4zTaXsdGcVsqHeaouoGmQ/1Ey/YYShqHaRZXWwC4GsgaxO9tCkWNH+hTjFZA2pgvKVl5HmLR";
+	// Whether to block out the garbage data in the center of the beacon, assuming that it's not taped
+	// The field setup guide says it should be taped on the inside, I have yet to see one configured as such
+	private static final boolean OBFUSCATE_MIDDLE = true;
 
 	/* State Machine */
 	private final byte STATE_SHOOTING = 0;
@@ -84,7 +93,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private String stateMessage = "Starting...";
 	private byte beaconsFound = 0;
 
-	private static String TAG = "DesignosaursAuto";
 	private int centeredPos = Integer.MAX_VALUE;
 	private long lastTelemetryUpdate = 0;
 	private byte teamColor = TEAM_UNSELECTED;
@@ -262,8 +270,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			}
 			*/
 
-			//FtcRobotControllerActivity.webServer.setImage(resizedbitmap);
-
 			Utils.bitmapToMat(resizedbitmap, output);
 		} catch(Exception e) {
 			e.printStackTrace();
@@ -421,7 +427,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					setState(STATE_SEARCHING);
 				break;
 				case STATE_SEARCHING:
-
 					if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
 						stateMessage = "Analysing beacon data...";
 
@@ -431,16 +436,28 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						Mat image = getRegionAboveBeacon();
 						if(image == null || vuforia.rgb == null) {
 							Log.w(TAG, "No frame! ॓_॔");
-							robot.setDrivePower(0.15);
+							robot.setDrivePower(MIN_DRIVE_POWER);
 
 							continue;
 						}
 
-						BeaconColorResult lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), image, SAVE_IMAGES).getResult();
+						BeaconPositionResult lastBeaconPosition = beaconFinder.process(System.currentTimeMillis(), image, SAVE_IMAGES).getResult();
+						int[] range = lastBeaconPosition.getRangePixels();
+
+						// Change the values in the following line for how much off the larger image we crop (y-wise,
+						// the x axis is controlled by where the robot thinks the beacon is, see BeaconFinder).
+						// TODO: Tune this based on actual field
+						Mat croppedImage = new Mat(image, new Rect(range[0], 0, range[1] - range[0], image.height() > 120 ? image.height() - 120 : image.height()));
+						BeaconColorResult lastBeaconColor = beaconProcessor.process(System.currentTimeMillis(), croppedImage, SAVE_IMAGES).getResult();
 						BeaconColorResult.BeaconColor targetColor = (teamColor == TEAM_RED ? BeaconColorResult.BeaconColor.RED : BeaconColorResult.BeaconColor.BLUE);
 
 						Log.i(TAG, "*** BEACON FOUND ***");
 						Log.i(TAG, "Target color: " + (targetColor == BeaconColorResult.BeaconColor.BLUE ? "Blue" : "Red"));
+						Log.i(TAG, "Beacon colors: " + lastBeaconColor.toString());
+
+						// TODO: Replace goStraight call with proper combined distance from beacon offset + target side offset
+						robot.goStraight(lastBeaconPosition.getOffsetFeet(), DRIVE_POWER);
+						robot.setDrivePower(0);
 
 						robot.resetDriveEncoders();
 						targetSide = lastBeaconColor.getLeftColor() == targetColor ? SIDE_LEFT : SIDE_RIGHT;

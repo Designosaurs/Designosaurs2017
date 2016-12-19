@@ -1,26 +1,34 @@
 package ftc.vision;
 
-class BeaconPositionResult {
-    private int deltaX = 0;
+public class BeaconPositionResult {
+	private int deltaX;
+	private int startX;
+	private int endX;
 
-    BeaconPositionResult(int deltaX) {
-        this.deltaX = deltaX;
-    }
+	public BeaconPositionResult(int deltaX, int startX, int endX) {
+		this.deltaX = deltaX;
+		this.startX = startX;
+		this.endX = endX;
+	}
 
-    int getEncoderCounts() {
-        return 0;
-    }
+	public int getOffsetEncoderCounts() {
+		return 0;
+	}
 
-    int getInches() {
-        return 0;
-    }
+	public int getOffsetFeet() {
+		return 0;
+	}
 
-    int getPixels() {
-        return deltaX;
-    }
+	public int getOffsetPixels() {
+		return deltaX;
+	}
 
-    @Override
-    public String toString() {
-        return "BeaconPositionResult (" + deltaX + "px)";
-    }
+	public int[] getRangePixels() {
+		return new int[] {startX, endX};
+	}
+
+	@Override
+	public String toString() {
+		return "BeaconPositionResult (" + deltaX + "px)";
+	}
 }

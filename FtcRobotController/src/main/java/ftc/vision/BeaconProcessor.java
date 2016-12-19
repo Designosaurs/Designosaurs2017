@@ -78,7 +78,7 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 		int[] data = new int[3]; //used to read the colSum
 
 		//loop through the filters
-		for(int i = 0; i <= 3; i++) {
+		for(int i = 0; i <= 2; i++) {
 			// apply HSV thresholds
 			maskedImage = new Mat();
 			ImageUtil.hsvInRange(hsv, hsvMin.get(i), hsvMax.get(i), maskedImage);

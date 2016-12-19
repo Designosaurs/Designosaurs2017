@@ -1,9 +1,5 @@
 package ftc.vision;
 
-/**
- * Created by williamtdr on 12/19/16.
- */
-
 import android.util.Log;
 
 import org.opencv.core.Core;
@@ -168,9 +164,9 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
             }
 
             //construct and return the result
-            return new ImageProcessorResult<>(startTime, output, new BeaconPositionResult(0));
+            return new ImageProcessorResult<>(startTime, output, new BeaconPositionResult(0, 0, rgbaFrame.width()));
         } else {
-            return new ImageProcessorResult<>(startTime, null, new BeaconPositionResult(0));
+            return new ImageProcessorResult<>(startTime, null, new BeaconPositionResult(0, 0, rgbaFrame.width()));
         }
     }
 }
