@@ -22,13 +22,16 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
     private Scalar blackMax = new Scalar(80, 80, 80, 255);
 
     // Distance between detected centers
-    private int MINIMUM_CIRCLE_DISTANCE = 100;
+    private int MINIMUM_CIRCLE_DISTANCE = 250;
     // Restrictions for canny edge detection, https://en.wikipedia.org/wiki/Canny_edge_detector
-    private int UPPER_THRESHOLD = 200;
-    private int LOWER_THRESHOLD = 100;
+    private int UPPER_THRESHOLD = 50;
+    private int LOWER_THRESHOLD = 30;
     // Restrictions on circle size
     private int MIN_RADIUS = 14;
     private int MAX_RADIUS = 25;
+
+    // Distance to crop from the button to edge of beacon
+    private int BEACON_CROP_DISTANCE = 100;
 
     void saveRawMat(String name, Mat src) {
         Bitmap bmp = null;
@@ -59,47 +62,61 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
 
     @Override
     public ImageProcessorResult<BeaconPositionResult> process(long startTime, Mat rgbaFrame, boolean saveImages) {
-        saveImages = true; // TODO: remember to turn this off
+        Log.i(TAG, "*** STARTING BEACON FINDER FRAME PROCESSING ***");
 
         Mat workingFrame = rgbaFrame.clone();
-        Log.i(TAG, "*** STARTING BEACON FINDER FRAME PROCESSING ***");
+        Mat processedFrame;
+
+        if(DEBUG)
+            processedFrame = rgbaFrame.clone();
 
         // save the original image in the Pictures directory
         if(saveImages)
             ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, "0_camera", startTime);
 
         // apply a blur to reduce graininess of the camera, overall noise
-        Imgproc.cvtColor(rgbaFrame, workingFrame, Imgproc.COLOR_RGB2GRAY);
-        Imgproc.GaussianBlur(workingFrame, workingFrame, new Size(9, 9), 5);
+        Imgproc.GaussianBlur(workingFrame, workingFrame, new Size(9, 9), 0);
 
         // detect only dark sections
         Mat darkSections = new Mat(workingFrame.rows(), workingFrame.cols(), workingFrame.type());
-        //Imgproc.rectangle(darkSections, new Point(0, 0), new Point(workingFrame.width(), workingFrame.height()), new Scalar(255, 255, 255, 255), -1);
         Core.inRange(workingFrame, blackMin, blackMax, darkSections);
+        // TODO: this call can be made more efficient
+        Imgproc.cvtColor(darkSections, darkSections, Imgproc.COLOR_GRAY2BGRA);
+        Imgproc.GaussianBlur(darkSections, darkSections, new Size(9, 9), 0);
+        Imgproc.cvtColor(darkSections, darkSections, Imgproc.COLOR_BGRA2GRAY);
 
-        // use hough's circle detection method
+        // use hough circle detection method
         Mat circles = new Mat();
         Imgproc.HoughCircles(darkSections, circles, Imgproc.CV_HOUGH_GRADIENT, 1, MINIMUM_CIRCLE_DISTANCE, UPPER_THRESHOLD, LOWER_THRESHOLD, MIN_RADIUS, MAX_RADIUS);
-        //Imgproc.HoughCircles(darkSections, circles, Imgproc.CV_HOUGH_GRADIENT, 1, MINIMUM_CIRCLE_DISTANCE);
 
-        Point pt = new Point();
+        // get points of buttons
+        double leftButton = 0,
+               rightButton = 0,
+               average;
+
         for (int i = 0; i < circles.cols(); i++) {
             double data[] = circles.get(0, i);
-            pt.x = data[0];
-            pt.y = data[1];
-            double rho = data[2];
-            Imgproc.circle(rgbaFrame, pt, (int) rho, new Scalar(0, 200, 0, 255), 4);
+
+            if(DEBUG) {
+                // draw circles on processed image:
+                Imgproc.circle(processedFrame, new Point(data[0], data[1]), (int) data[2], new Scalar(0, 200, 0, 255), 4);
+            }
+
+            if(leftButton == 0)
+                leftButton = data[0];
+            else
+                rightButton = data[0];
         }
+
+        average = Math.floor(((rightButton - leftButton) / 2) + leftButton);
 
         if(DEBUG && saveImages) {
             saveRawMat("black", darkSections);
-            saveRawMat("blur", workingFrame);
-            saveRawMat("circles", circles);
-            saveRawMat("processed", rgbaFrame);
+            saveRawMat("processed", processedFrame);
         }
 
         Log.i(TAG, "Processing finished, took " + (System.currentTimeMillis() - startTime) + "ms");
 
-        return new ImageProcessorResult<>(startTime, null, new BeaconPositionResult(0, 0, rgbaFrame.width()));
+        return new ImageProcessorResult<>(startTime, null, new BeaconPositionResult(average, leftButton - BEACON_CROP_DISTANCE, rightButton + BEACON_CROP_DISTANCE));
     }
 }

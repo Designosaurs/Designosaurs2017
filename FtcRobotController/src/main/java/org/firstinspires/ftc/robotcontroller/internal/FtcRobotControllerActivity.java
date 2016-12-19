@@ -57,6 +57,7 @@ import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.qualcomm.ftccommon.AboutActivity;
 import com.qualcomm.ftccommon.Device;
@@ -447,6 +448,13 @@ public class FtcRobotControllerActivity extends Activity {
 			startActivity(inspectionModeIntent);
 			return true;
 		} else if(id == R.id.action_debug_mode) {
+			if(!eventLoop.getOpModeManager().areOpModesRegistered()) {
+				Toast toast = Toast.makeText(getApplicationContext(), "Wait for robot to initialize!", Toast.LENGTH_LONG);
+				toast.show();
+
+				return true;
+			}
+
 			List<OpModeMeta> opmodes = eventLoop.getOpModeManager().getOpModes();
 
 			for(OpModeMeta e : opmodes)

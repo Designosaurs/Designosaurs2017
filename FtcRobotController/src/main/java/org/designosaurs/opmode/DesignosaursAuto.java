@@ -197,8 +197,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 	private void recalculateCriticalPoints() {
 		if(lastPose != null) {
-			start = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(180, 320, 0))); // 127, 92, 0
-			end = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-180, 180, 0))); // -127, -92, 0
+			start = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(220, 320, 0))); // 127, 92, 0
+			end = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-220, 180, 0))); // -127, -92, 0
 			center = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(0, 0, 0)));
 
 			//upperLeft = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-120, 280, 0))); // -127, 92, 0
@@ -440,13 +440,19 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 						BeaconPositionResult lastBeaconPosition = beaconFinder.process(System.currentTimeMillis(), image, SAVE_IMAGES).getResult();
 						int[] range = lastBeaconPosition.getRangePixels();
+						if(range[0] < 0)
+							range[0] = 0;
+
+						if(range[1] > image.width())
+							range[1] = image.width();
+
 						Log.i(TAG, "Beacon finder results: " + lastBeaconPosition.toString());
 
 						// Change the values in the following line for how much off the larger image we crop (y-wise,
 						// the x axis is controlled by where the robot thinks the beacon is, see BeaconFinder).
 						// TODO: Tune this based on actual field
 						Log.i(TAG, "Source image is " + image.height() + "px by " + image.width() + "px");
-						Mat croppedImageRaw = new Mat(image, new Rect(range[0], 0, range[1] - range[0], image.height() > 75 ? image.height() - 75 : image.height()));
+						Mat croppedImageRaw = new Mat(image, new Rect(range[0], 0, range[1] - range[0], image.height() > 50 ? image.height() - 50 : image.height()));
 						Mat croppedImage = new Mat();
 						Imgproc.resize(croppedImageRaw, croppedImage, new Size(), 0.5, 0.5, Imgproc.INTER_LINEAR);
 
