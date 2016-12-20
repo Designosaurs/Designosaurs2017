@@ -21,6 +21,7 @@ public class ButtonPusherManager extends Thread {
 	static final byte STATE_RETURNING_TO_BASE = 1;
 	static final byte STATE_AT_BASE = 2;
 	static final byte STATE_SCORING = 3;
+	static final byte STATE_MANUAL = 4;
 
 	private byte state = -1;
 	private int lastPosition = 0;
@@ -63,6 +64,7 @@ public class ButtonPusherManager extends Thread {
 		}
 
 		switch(state) {
+			// Retracting placer until it hits the side shields, so it starts in a consistent place.
 			case STATE_HOMING:
 				if(isStuck) {
 					robot.setButtonPusherPower(0);
@@ -71,8 +73,8 @@ public class ButtonPusherManager extends Thread {
 					setStatus(STATE_RETURNING_TO_BASE);
 				}
 			break;
+			// Robot has completed homing or scoring, and is returning to TARGET_IDLE_POSITION.
 			case STATE_RETURNING_TO_BASE:
-				// Tries to maintain button pusher at TARGET_IDLE_POSITION
 				double buttonPusherPositionDelta = robot.getAdjustedEncoderPosition(robot.buttonPusher) - TARGET_IDLE_POSITION;
 
 				if(Math.abs(buttonPusherPositionDelta) < AT_BASE_TOLERANCE) {
@@ -82,9 +84,15 @@ public class ButtonPusherManager extends Thread {
 				} else
 					robot.setButtonPusherPower(robot.getAdjustedEncoderPosition(robot.buttonPusher) <= TARGET_IDLE_POSITION ? POWER : -POWER);
 			break;
+			// Waiting for button pusher to collide with beacon or reach a point where it cannot safely continue.
 			case STATE_SCORING:
 				if(robot.getAdjustedEncoderPosition(robot.buttonPusher) >= EXTEND_MAX || isStuck)
 					setStatus(STATE_RETURNING_TO_BASE);
+			break;
+			// Prevents the driver from moving the button pusher out too far during TeleOp.
+			case STATE_MANUAL:
+				if(robot.getAdjustedEncoderPosition(robot.buttonPusher) >= (EXTEND_MAX - 100) && robot.buttonPusher.getPower() > 0)
+					robot.setButtonPusherPower(0);
 		}
 	}
 

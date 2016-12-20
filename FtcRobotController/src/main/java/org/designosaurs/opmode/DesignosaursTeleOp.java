@@ -9,6 +9,7 @@ import java.text.DecimalFormat;
 @TeleOp(name = "Designosaurs Drive", group = "TeleOp")
 public class DesignosaursTeleOp extends LinearOpMode {
 	private DesignosaursHardware robot = new DesignosaursHardware();
+	private ButtonPusherManager buttonPusherManager = new ButtonPusherManager(robot);
 
 	private static final double JOYSTICK_DEADBAND = 0.2;
 	private static final double DRIVE_POWER = 0.7;
@@ -34,9 +35,11 @@ public class DesignosaursTeleOp extends LinearOpMode {
 		robot.rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 		robot.buttonPusher.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
+		buttonPusherManager.start();
 		setInitStatus("Ready to start!");
-
 		waitForStart();
+
+		buttonPusherManager.setStatus(ButtonPusherManager.STATE_HOMING);
 
 		while(opModeIsActive()) {
 			left = -gamepad1.left_stick_y;
@@ -57,6 +60,14 @@ public class DesignosaursTeleOp extends LinearOpMode {
 				lift = 0;
 
 			if(DesignosaursHardware.hardwareEnabled) {
+				byte buttonPusherStatus = buttonPusherManager.getStatus();
+
+				if(buttonPusherStatus == ButtonPusherManager.STATE_AT_BASE)
+					buttonPusherManager.setStatus(ButtonPusherManager.STATE_MANUAL);
+
+				if(buttonPusher != 0 && buttonPusherStatus == ButtonPusherManager.STATE_MANUAL)
+					robot.setButtonPusherPower(buttonPusher);
+
 				robot.leftMotor.setPower(left * DRIVE_POWER);
 				robot.rightMotor.setPower(right * DRIVE_POWER);
 				robot.buttonPusher.setPower(buttonPusher * BUTTON_PUSHER_POWER);
