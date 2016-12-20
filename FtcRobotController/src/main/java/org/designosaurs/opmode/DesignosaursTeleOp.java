@@ -12,8 +12,12 @@ public class DesignosaursTeleOp extends LinearOpMode {
 	private ButtonPusherManager buttonPusherManager = new ButtonPusherManager(robot);
 
 	private static final double JOYSTICK_DEADBAND = 0.2;
-	private static final double DRIVE_POWER = 0.7;
 	private static final double BUTTON_PUSHER_POWER = 0.4;
+
+	private static final double HIGH_GEAR = 1;
+	private static final double LOW_GEAR = 0.5;
+
+	private double drivePower = HIGH_GEAR;
 
 	private DecimalFormat decimalFormat = new DecimalFormat("#.00");
 
@@ -59,6 +63,12 @@ public class DesignosaursTeleOp extends LinearOpMode {
 			if(Math.abs(lift) < JOYSTICK_DEADBAND)
 				lift = 0;
 
+			if(gamepad1.right_bumper)
+				drivePower = HIGH_GEAR;
+
+			if(gamepad1.right_trigger > 0.5)
+				drivePower = LOW_GEAR;
+
 			if(DesignosaursHardware.hardwareEnabled) {
 				byte buttonPusherStatus = buttonPusherManager.getStatus();
 
@@ -68,8 +78,8 @@ public class DesignosaursTeleOp extends LinearOpMode {
 				if(buttonPusher != 0 && buttonPusherStatus == ButtonPusherManager.STATE_MANUAL)
 					robot.setButtonPusherPower(buttonPusher);
 
-				robot.leftMotor.setPower(left * DRIVE_POWER);
-				robot.rightMotor.setPower(right * DRIVE_POWER);
+				robot.leftMotor.setPower(left * drivePower);
+				robot.rightMotor.setPower(right * drivePower);
 				robot.buttonPusher.setPower(buttonPusher * BUTTON_PUSHER_POWER);
 				robot.lift.setPower(lift > 0 ? 0.7 : lift);
 
