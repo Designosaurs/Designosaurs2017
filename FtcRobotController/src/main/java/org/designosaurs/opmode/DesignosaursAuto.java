@@ -105,7 +105,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private Context appContext;
 	private VuforiaLocalizerImplSubclass vuforia = null;
 	private int ballsShot = 0;
-	private Image lastFrame;
 	private Matrix34F lastPose;
 	private long lastFrameSentAt = 0;
 
@@ -334,7 +333,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					Matrix34F rawPose = new Matrix34F();
 					float[] poseData = Arrays.copyOfRange(pose.transposed().getData(), 0, 12);
 					rawPose.setData(poseData);
-					lastFrame = vuforia.rgb;
 					lastPose = rawPose;
 
 					recalculateCriticalPoints();
