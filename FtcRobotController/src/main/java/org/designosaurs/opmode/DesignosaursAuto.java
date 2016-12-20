@@ -425,10 +425,13 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 						byte pass = 0;
 						boolean successful = false;
+						BeaconPositionResult lastBeaconPosition = null;
+						int[] range = {0, 500};
 
 						while(!successful) {
-							BeaconPositionResult lastBeaconPosition = beaconFinder.process(System.currentTimeMillis(), image, SAVE_IMAGES).getResult();
-							int[] range = lastBeaconPosition.getRangePixels();
+							lastBeaconPosition = beaconFinder.process(System.currentTimeMillis(), image, SAVE_IMAGES).getResult();
+							range = lastBeaconPosition.getRangePixels();
+
 							if(range[0] < 0)
 								range[0] = 0;
 
