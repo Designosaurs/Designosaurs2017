@@ -18,6 +18,7 @@ import java.text.DecimalFormat;
 class DesignosaursHardware {
 	// Disable this to run the robot without sensors/motors, for testing image recognition
 	static boolean hardwareEnabled = true;
+	static boolean imuEnabled = false;
 
 	/* Hardware goes here */
 	DcMotor leftMotor = null;
@@ -40,6 +41,16 @@ class DesignosaursHardware {
 	private Orientation orientation;
 	private final String TAG = "DesignosaursHardware";
 	private DecimalFormat decimalFormat = new DecimalFormat("#.00");
+	boolean isTeleOp = false;
+
+	DesignosaursHardware() {}
+
+	DesignosaursHardware(boolean isTeleOp) {
+		this.isTeleOp = isTeleOp;
+
+		if(isTeleOp)
+			imuEnabled = false;
+	}
 
 	// Called in initialization, before start. Does not initialize IMU.
 	void init(HardwareMap hwMap) {
@@ -49,12 +60,9 @@ class DesignosaursHardware {
 			buttonPusher = hwMap.dcMotor.get("buttonPusher");
 			shooter = hwMap.dcMotor.get("shooter");
 			lift = hwMap.dcMotor.get("lift");
-			imu = new AdafruitBNO055IMU(hwMap.i2cDeviceSynch.get("imu"));
 
 			leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 			rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-			leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-			rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 			leftMotor.setDirection(DcMotor.Direction.REVERSE);
 
 			buttonPusher.setDirection(DcMotor.Direction.REVERSE);
@@ -70,14 +78,18 @@ class DesignosaursHardware {
 			encoderOffsets.put(buttonPusher.hashCode(), 0);
 			resetDriveEncoders();
 
-			BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-			parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
-			parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-			//parameters.calibrationDataFile = "AdafruitIMUCalibration.json"; // see the calibration sample opmode
-			parameters.loggingEnabled = false;
-			parameters.temperatureUnit = BNO055IMU.TempUnit.FARENHEIT;
+			if(imuEnabled) {
+				imu = new AdafruitBNO055IMU(hwMap.i2cDeviceSynch.get("imu"));
 
-			imu.initialize(parameters);
+				BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+				parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+				parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+				//parameters.calibrationDataFile = "AdafruitIMUCalibration.json"; // see the calibration sample opmode
+				parameters.loggingEnabled = false;
+				parameters.temperatureUnit = BNO055IMU.TempUnit.FARENHEIT;
+
+				imu.initialize(parameters);
+			}
 
 			Log.i(TAG, "Hardware initialized.");
 			return;

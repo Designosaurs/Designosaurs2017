@@ -21,7 +21,6 @@ public class ButtonPusherManager extends Thread {
 	static final byte STATE_RETURNING_TO_BASE = 1;
 	static final byte STATE_AT_BASE = 2;
 	static final byte STATE_SCORING = 3;
-	static final byte STATE_MANUAL = 4;
 
 	private byte state = -1;
 	private int lastPosition = 0;
@@ -88,11 +87,6 @@ public class ButtonPusherManager extends Thread {
 			case STATE_SCORING:
 				if(robot.getAdjustedEncoderPosition(robot.buttonPusher) >= EXTEND_MAX || isStuck)
 					setStatus(STATE_RETURNING_TO_BASE);
-			break;
-			// Prevents the driver from moving the button pusher out too far during TeleOp.
-			case STATE_MANUAL:
-				if(robot.getAdjustedEncoderPosition(robot.buttonPusher) >= (EXTEND_MAX - 100) && robot.buttonPusher.getPower() > 0)
-					robot.setButtonPusherPower(0);
 		}
 	}
 

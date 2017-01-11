@@ -8,11 +8,10 @@ import java.text.DecimalFormat;
 
 @TeleOp(name = "Designosaurs Drive", group = "TeleOp")
 public class DesignosaursTeleOp extends LinearOpMode {
-	private DesignosaursHardware robot = new DesignosaursHardware();
-	private ButtonPusherManager buttonPusherManager = new ButtonPusherManager(robot);
+	private DesignosaursHardware robot = new DesignosaursHardware(true);
 
 	private static final double JOYSTICK_DEADBAND = 0.2;
-	private static final double BUTTON_PUSHER_POWER = 0.4;
+	private static final double BUTTON_PUSHER_POWER = 0.3;
 
 	private static final double HIGH_GEAR = 1;
 	private static final double LOW_GEAR = 0.5;
@@ -39,11 +38,8 @@ public class DesignosaursTeleOp extends LinearOpMode {
 		robot.rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 		robot.buttonPusher.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-		buttonPusherManager.start();
 		setInitStatus("Ready to start!");
 		waitForStart();
-
-		buttonPusherManager.setStatus(ButtonPusherManager.STATE_HOMING);
 
 		while(opModeIsActive()) {
 			left = -gamepad1.left_stick_y;
@@ -69,19 +65,13 @@ public class DesignosaursTeleOp extends LinearOpMode {
 			if(gamepad1.right_trigger > 0.5)
 				drivePower = LOW_GEAR;
 
+			robot.shooter.setPower(gamepad2.a ? 1 : 0);
+
 			if(DesignosaursHardware.hardwareEnabled) {
-				byte buttonPusherStatus = buttonPusherManager.getStatus();
-
-				if(buttonPusherStatus == ButtonPusherManager.STATE_AT_BASE)
-					buttonPusherManager.setStatus(ButtonPusherManager.STATE_MANUAL);
-
-				if(buttonPusher != 0 && buttonPusherStatus == ButtonPusherManager.STATE_MANUAL)
-					robot.setButtonPusherPower(buttonPusher);
-
 				robot.leftMotor.setPower(left * drivePower);
 				robot.rightMotor.setPower(right * drivePower);
 				robot.buttonPusher.setPower(buttonPusher * BUTTON_PUSHER_POWER);
-				robot.lift.setPower(lift > 0 ? 0.7 : lift);
+				robot.lift.setPower(lift > 0 ? 0.6 : lift);
 
 				telemetry.clear();
 				telemetry.addLine("L power: " + decimalFormat.format(left));
