@@ -364,9 +364,10 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 				case STATE_SHOOTING:
 					if(shooterManager.getStatus() == ShooterManager.STATE_AT_BASE) {
 						robot.waitForTick(1000);
-						if(ballsShot++ < 2) {
+
+						if(ballsShot++ < 2)
 							shooterManager.setStatus(ShooterManager.STATE_SCORING);
-						} else {
+						else {
 							shooterManager.setStatus(ShooterManager.STATE_HOMING);
 
 							setState(STATE_INITIAL_POSITIONING);
