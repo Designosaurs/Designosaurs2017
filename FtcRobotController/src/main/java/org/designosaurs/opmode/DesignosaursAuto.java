@@ -55,7 +55,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private static final double MIN_DRIVE_POWER = 0.2;
 	private static final double DRIVE_POWER = 0.3;
 	private static final double SLOW_DOWN_AT = 300;
-	private static final int BEACON_ALIGNMENT_TOLERANCE = 70;
+	private static final int BEACON_ALIGNMENT_TOLERANCE = 100;
 	private static final boolean SAVE_IMAGES = true;
 	private static final boolean TEST_MODE = false;
 	private static final boolean ENABLE_CAMERA_STREAMING = true;
@@ -373,9 +373,14 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					stateMessage = "Shooting...";
 
 					if(shooterManager.getStatus() == ShooterManager.STATE_AT_BASE)
-						if(ballsShot++ < 2)
+						if(ballsShot++ < 2) {
+							if(ballsShot == 2) {
+								robot.accel(0.2, TURN_POWER);
+								robot.setDrivePower(0);
+							}
+
 							shooterManager.setStatus(ShooterManager.STATE_SCORING);
-						else {
+						} else {
 							shooterManager.setStatus(ShooterManager.STATE_HOMING);
 
 							setState(STATE_INITIAL_POSITIONING);
@@ -388,9 +393,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						robot.rightMotor.setDirection(DcMotor.Direction.REVERSE);
 						robot.leftMotor.setDirection(DcMotor.Direction.FORWARD);
 					}
-
-					updateRunningState("Accelerating...");
-					robot.accel(0.2, TURN_POWER);
 
 					if(teamColor == TEAM_RED) {
 						updateRunningState("Initial turn...");
@@ -465,7 +467,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 								Log.i(TAG, "Searching for beacon presence, pass #" + beaconsFound + ":" + pass + ".");
 
 								// We can't see both buttons, so move back and forth and run detection algorithm again
-								robot.goStraight(pass <= 2 ? -0.2 : 0.2, 0.2);
+								robot.goStraight(pass <= 2 ? -0.1 : 0.1, 0.2);
 
 								// Allow camera time to autofocus:
 								robot.waitForTick(500);
