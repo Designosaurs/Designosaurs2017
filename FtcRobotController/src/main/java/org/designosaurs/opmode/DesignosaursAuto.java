@@ -56,8 +56,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private BeaconProcessor beaconProcessor = new BeaconProcessor();
 
 	/* Configuration */
-	private static final double FAST_DRIVE_POWER = 0.65;
-	private static final double TURN_POWER = 0.35;
+	private static final double FAST_DRIVE_POWER = 0.8;
+	private static final double TURN_POWER = 0.4;
 	private static final double MIN_DRIVE_POWER = 0.2;
 	private static final double DRIVE_POWER = 0.3;
 	private static final double SLOW_DOWN_AT = 300;
