@@ -107,10 +107,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private VuforiaLocalizerImplSubclass vuforia = null;
 	private int ballsShot = 0;
 	private Matrix34F lastPose;
-	private long lastFrameSentAt = 0;
-
-	/* Per-run State */
-	private long ticksSeeingImage = 0;
+	private long lastFrameSentAt = 0;private long ticksSeeingImage = 0;
 
 	/* Pose Tracking Points */
 	private Vector2 center;
@@ -164,6 +161,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	// Shortcut method
 	private void updateRunningState(String newStateMessage) {
 		stateMessage = newStateMessage;
+		Log.i(TAG, "New state msg: " + newStateMessage);
 
 		updateRunningState();
 	}
@@ -269,6 +267,12 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		return output;
 	}
 
+	void advanceToSecondBeacon(String beaconName) {
+		lastScoredBeaconName = beaconName;
+		beaconsFound++;
+		centeredPos = Integer.MAX_VALUE;
+	}
+
 
 	// This is where the main logic block lives
 	@Override
@@ -324,6 +328,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 		while(opModeIsActive()) {
 			String beaconName = "";
+			long ticksSeeingImage = 0;
 
 			// Detect and process images
 			for(VuforiaTrackable beac : beacons) {
@@ -395,7 +400,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 						updateRunningState("Secondary move...");
 						robot.accel(0.5, FAST_DRIVE_POWER);
-						robot.goStraight(3.35, FAST_DRIVE_POWER);
+						robot.goStraight(2.8, FAST_DRIVE_POWER);
+						robot.decel(0.5, 0);
 
 						updateRunningState("Secondary turn...");
 						robot.turn(35, 0.2);
@@ -405,8 +411,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 						updateRunningState("Secondary move...");
 						robot.accel(0.5, FAST_DRIVE_POWER);
-						robot.goStraight(2.75, FAST_DRIVE_POWER);
-						robot.decel(0.7, TURN_POWER);
+						robot.goStraight(2.8, FAST_DRIVE_POWER);
+						robot.decel(0.5, 0);
 
 						updateRunningState("Secondary turn...");
 						robot.turn(-39, TURN_POWER);
@@ -457,21 +463,28 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 								successful = true;
 							else {
 								pass++;
+
+								// We can't see both buttons, so move back and forth and run detection algorithm again
 								robot.goStraight(pass <= 2 ? -0.2 : 0.2, 0.2);
 
+								// Allow camera time to autofocus:
+								robot.waitForTick(500);
+
 								if(pass >= 4) {
-									// Failed :(
+									// We've scanned around the beacon and still can't see it
 									if(beaconsFound == 0) {
+										// If this is the first beacon, skip to the next one
 										robot.accel(0.5, 1);
 										robot.goStraight(targetSide == SIDE_LEFT ? 1.5 : 1, 1);
 										robot.decel(0.5, DRIVE_POWER);
-										lastScoredBeaconName = beaconName;
-										beaconsFound++;
-										centeredPos = Integer.MAX_VALUE;
+
+										advanceToSecondBeacon(beaconName);
 
 										setState(STATE_SEARCHING);
-									} else
+									} else {
+										// Emergency stop
 										setState(STATE_FINISHED);
+									}
 								}
 							}
 						}
@@ -548,9 +561,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					stateMessage = "Waiting for placer to deploy.";
 
 					if((buttonPusherManager.getStatus() != ButtonPusherManager.STATE_SCORING && buttonPusherManager.getTicksInState() >= 10) || buttonPusherManager.getStatus() == ButtonPusherManager.STATE_AT_BASE) {
-						lastScoredBeaconName = beaconName;
-						beaconsFound++;
-						centeredPos = Integer.MAX_VALUE;
+						advanceToSecondBeacon(beaconName);
 
 						if(beaconsFound == 2)
 							setState(STATE_FINISHED);

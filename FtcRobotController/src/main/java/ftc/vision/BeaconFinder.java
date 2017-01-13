@@ -1,18 +1,13 @@
 package ftc.vision;
 
-import android.graphics.Bitmap;
-import android.os.Environment;
 import android.util.Log;
 
-import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
-
-import java.io.FileOutputStream;
 
 public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
     private static final boolean DEBUG = true;
@@ -27,38 +22,11 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
     private int UPPER_THRESHOLD = 50;
     private int LOWER_THRESHOLD = 30;
     // Restrictions on circle size
-    private int MIN_RADIUS = 18;
+    private int MIN_RADIUS = 20;
     private int MAX_RADIUS = 50;
 
     // Distance to crop from the button to edge of beacon
     private int BEACON_CROP_DISTANCE = 100;
-
-    void saveRawMat(String name, Mat src) {
-        Bitmap bmp = null;
-        try {
-            bmp = Bitmap.createBitmap(src.cols(), src.rows(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(src, bmp);
-        } catch (Exception e) {
-            Log.d(TAG, e.getMessage());
-        }
-
-        FileOutputStream out = null;
-        try {
-            String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + "/" + System.currentTimeMillis() + "_" + name + ".png";
-            Log.i(TAG, "Saving mat to " + path);
-            out = new FileOutputStream(path);
-            bmp.compress(Bitmap.CompressFormat.PNG, 100, out);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if(out != null)
-                    out.close();
-            } catch(Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
 
     @Override
     public ImageProcessorResult<BeaconPositionResult> process(long startTime, Mat rgbaFrame, boolean saveImages) {
@@ -72,7 +40,7 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
 
         // save the original image in the Pictures directory
         if(saveImages)
-            ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, "0_camera", startTime);
+            ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, "BeaconFinder-" + System.currentTimeMillis() + "-0-original.png");
 
         // apply a blur to reduce graininess of the camera, overall noise
         Imgproc.GaussianBlur(workingFrame, workingFrame, new Size(9, 9), 0);
@@ -121,8 +89,8 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
         average = Math.floor(((rightButton - leftButton) / 2) + leftButton);
 
         if(DEBUG && saveImages) {
-            saveRawMat("black", darkSections);
-            saveRawMat("processed", processedFrame);
+            ImageUtil.saveImage(TAG, darkSections, -1, "BeaconFinder-" + System.currentTimeMillis() + "-1-black.png");
+            ImageUtil.saveImage(TAG, processedFrame, -1, "BeaconFinder-" + System.currentTimeMillis() + "-2-processed.png");
         }
 
         Log.i(TAG, "Buttons found: " + buttonsFound);

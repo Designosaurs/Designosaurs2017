@@ -1,6 +1,5 @@
 package ftc.vision;
 
-
 import android.util.Log;
 
 import org.opencv.core.Core;
@@ -14,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
-	private static final boolean DEBUG = false;
+	private static final boolean DEBUG = true;
 	private static final String TAG = "BeaconProcessor";
 	private static final double MIN_MASS = 6;
 
@@ -25,7 +24,7 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 		Mat rgbaFrameBak = rgbaFrame.clone();
 		//save the image in the Pictures directory
 		if(saveImages)
-			ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, "1_camera", startTime);
+			ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, startTime + "-0-cropped.png");
 
 		// convert image to hsv
 		Mat hsv = new Mat();
@@ -140,7 +139,7 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 			ImageUtil.overlayImage(rgbaFrameBak, rgbaFrame, output);
 
 			if(saveImages)
-				ImageUtil.saveImage(TAG, output, Imgproc.COLOR_RGBA2BGR, "1_processed", startTime);
+				ImageUtil.saveImage(TAG, output, Imgproc.COLOR_RGBA2BGR, "BeaconProcessor-" + startTime + "-1-processed.png");
 
 			//construct and return the result
 			return new ImageProcessorResult<>(startTime, output, new BeaconColorResult(left, right));

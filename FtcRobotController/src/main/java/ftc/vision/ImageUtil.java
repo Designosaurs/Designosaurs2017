@@ -175,16 +175,18 @@ public class ImageUtil {
 	 * @param tag             logging tag
 	 * @param mat             image to save
 	 * @param conversionToBGR openCV code to convert to bgr
-	 * @param fileSuffix      end of file name
-	 * @param time            start of file name
+	 * @param fileName        save file as
 	 * @return whether or not the save was successful
 	 */
-	public static boolean saveImage(String tag, Mat mat, int conversionToBGR, String fileSuffix, long time) {
+	static boolean saveImage(String tag, Mat mat, int conversionToBGR, String fileName) {
 		Mat bgrMat = new Mat();
-		Imgproc.cvtColor(mat, bgrMat, conversionToBGR);
+		if(conversionToBGR != -1)
+			Imgproc.cvtColor(mat, bgrMat, conversionToBGR);
+		else
+			bgrMat = mat;
 
 		File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-		File file = new File(path, time + "_" + fileSuffix + ".png");
+		File file = new File(path, fileName + ".png");
 
 		if(Imgcodecs.imwrite(file.toString(), bgrMat)) {
 			return true;
