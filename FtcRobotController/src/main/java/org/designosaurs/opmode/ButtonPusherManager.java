@@ -6,7 +6,7 @@ import java.util.ArrayList;
 
 public class ButtonPusherManager extends Thread {
 	/* Configuration */
-	private static final double POWER = 0.25;
+	private static final double POWER = 0.23;
 	// Expected change in encoder counts per loop, used to detect whether it's home/stuck
 	private static final int MOVEMENT_THRESHOLD = 10;
 	// Target base position to return to after homing or scoring
@@ -145,8 +145,9 @@ public class ButtonPusherManager extends Thread {
 			case STATE_SCORING:
 				robot.setButtonPusherPower(POWER);
 
+				// Adjust this for how long the robot pushes on the button.
+				// Too low and don't finish pressing the button, too high and we move the robot too much
 				positionHistory.clear();
-
 				for(int i = 1; i <= 60; i++)
 					positionHistory.add(10);
 		}

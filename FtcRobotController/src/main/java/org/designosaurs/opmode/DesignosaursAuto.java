@@ -506,8 +506,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						if(width < 0)
 							width = image.width() - range[0];
 
-						Mat croppedImageRaw = new Mat(image, new Rect(range[0], 0, width, image.height() > 50 ? image.height() - 50 : image.height()));
-						Mat croppedImage = new Mat();
+						Mat croppedImageRaw = new Mat(image, new Rect(range[0], 0, width, image.height() > 50 ? image.height() - 50 : image.height())),
+							croppedImage = new Mat();
+
 						Imgproc.resize(croppedImageRaw, croppedImage, new Size(), 0.5, 0.5, Imgproc.INTER_LINEAR);
 
 						if(OBFUSCATE_MIDDLE)
@@ -647,6 +648,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 	// Offset here represents how far the camera is from the button pusher
 	private int getRelativePosition() {
+		// Adjust the offset for the button pusher -> camera distance
 		int result = centeredPos - 340;
 
 		if(teamColor == TEAM_BLUE)

@@ -76,7 +76,7 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 		double mass;
 		int[] data = new int[3]; //used to read the colSum
 
-		//loop through the filters
+		// loop through the filters
 		for(int i = 0; i <= 2; i++) {
 			// apply HSV thresholds
 			maskedImage = new Mat();
@@ -84,26 +84,26 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 
 			rgbaChannels.add(maskedImage); // copy the binary image to a channel of rgbaChannels
 
-			//apply a column sum to the (unscaled) binary image
+			// apply a column sum to the (unscaled) binary image
 			Core.reduce(maskedImage, colSum, 0, Core.REDUCE_SUM, 4);
 
-			//loop through left and right to calculate mass
+			// loop through left and right to calculate mass
 			int start = 0;
 			int end = hsv.width() / 2;
 			for(int j = 0; j <= 1; j++) {
-				//calculate the mass
+				// calculate the mass
 				mass = 0;
 				for(int x = start; x < end; x++) {
 					colSum.get(0, x, data);
 					mass += data[0];
 				}
-				mass /= hsv.size().area(); //scale the mass by the image size
+				mass /= hsv.size().area(); // scale the mass by the image size
 
-				//if the mass found is greater than the max for this side
+				// if the mass found is greater than the max for this side
 				if(mass >= MIN_MASS && mass > maxMass[j]) {
-					//this mass is the new max for this side
+					// this mass is the new max for this side
 					maxMass[j] = mass;
-					//and this index is the new maxIndex for this side
+					// and this index is the new maxIndex for this side
 					maxMassIndex[j] = i == 3 ? 2 : i;
 				}
 
@@ -113,19 +113,19 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 		}
 
 		if(DEBUG) {
-			//add empty alpha channel
+			// Empty alpha channel:
 			rgbaChannels.add(Mat.zeros(hsv.size(), CvType.CV_8UC1));
-			//merge the 3 binary images and 1 alpha channel into one image
+			// Merge the 3 binary images and 1 alpha channel into one image:
 			Core.merge(rgbaChannels, rgbaFrame);
 		}
 
-		//use the maxIndex array to get the left and right colors
+		// Use the maxIndex array to get the left and right colors:
 		BeaconColorResult.BeaconColor[] beaconColors = BeaconColorResult.BeaconColor.values();
 		BeaconColorResult.BeaconColor left = beaconColors[maxMassIndex[0]];
 		BeaconColorResult.BeaconColor right = beaconColors[maxMassIndex[1]];
 
 		if(DEBUG) {
-			//draw the color result bars
+			// Draw on output frame the calculated color masses
 			int barHeight = (int) Math.max(Math.ceil(hsv.height() / 30), 5);
 			Imgproc.rectangle(rgbaFrame, new Point(0, 0), new Point(hsv.width() / 2, barHeight), left.color, barHeight);
 			Imgproc.rectangle(rgbaFrame, new Point(hsv.width() / 2, 0), new Point(hsv.width(), barHeight), right.color, barHeight);
@@ -135,16 +135,13 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 
 		if(DEBUG) {
 			Mat output = rgbaFrame.clone();
-
 			ImageUtil.overlayImage(rgbaFrameBak, rgbaFrame, output);
 
 			if(saveImages)
 				ImageUtil.saveImage(TAG, output, Imgproc.COLOR_RGBA2BGR, "BeaconProcessor-" + startTime + "-1-processed.png");
 
-			//construct and return the result
 			return new ImageProcessorResult<>(startTime, output, new BeaconColorResult(left, right));
-		} else {
+		} else
 			return new ImageProcessorResult<>(startTime, null, new BeaconColorResult(left, right));
-		}
 	}
 }
