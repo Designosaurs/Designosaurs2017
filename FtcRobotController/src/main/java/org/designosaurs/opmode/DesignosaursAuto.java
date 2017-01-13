@@ -55,7 +55,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private static final double MIN_DRIVE_POWER = 0.2;
 	private static final double DRIVE_POWER = 0.3;
 	private static final double SLOW_DOWN_AT = 300;
-	private static final int BEACON_ALIGNMENT_TOLERANCE = 100;
+	private static final int BEACON_ALIGNMENT_TOLERANCE = 80;
 	private static final boolean SAVE_IMAGES = true;
 	private static final boolean TEST_MODE = false;
 	private static final boolean ENABLE_CAMERA_STREAMING = true;
@@ -101,7 +101,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private VuforiaLocalizerImplSubclass vuforia = null;
 	private int ballsShot = 0;
 	private Matrix34F lastPose;
-	private long lastFrameSentAt = 0;private long ticksSeeingImage = 0;
+	private long lastFrameSentAt = 0;
 
 	/* Pose Tracking Points */
 	private Vector2 center;
@@ -324,9 +324,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 		beacons.activate();
 
+		long ticksSeeingImage = 0;
 		while(opModeIsActive()) {
 			String beaconName = "";
-			long ticksSeeingImage = 0;
 
 			// Detect and process images
 			for(VuforiaTrackable beac : beacons) {
@@ -375,7 +375,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					if(shooterManager.getStatus() == ShooterManager.STATE_AT_BASE)
 						if(ballsShot++ < 2) {
 							if(ballsShot == 2) {
-								robot.accel(0.2, TURN_POWER);
+								robot.accel(0.3, TURN_POWER);
 								robot.setDrivePower(0);
 							}
 
@@ -396,22 +396,22 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 					if(teamColor == TEAM_RED) {
 						updateRunningState("Initial turn...");
-						robot.turn(-35, TURN_POWER);
+						robot.turn(-35, 0.3);
 
 						updateRunningState("Secondary move...");
 						robot.accel(0.5, FAST_DRIVE_POWER);
-						robot.goStraight(2.8, FAST_DRIVE_POWER);
+						robot.goStraight(2.55, FAST_DRIVE_POWER);
 						robot.decel(0.5, 0);
 
 						updateRunningState("Secondary turn...");
-						robot.turn(35, 0.2);
+						robot.turn(40, 0.2);
 					} else {
 						updateRunningState("Initial turn...");
 						robot.turn(40, 0.3);
 
 						updateRunningState("Secondary move...");
 						robot.accel(0.5, FAST_DRIVE_POWER);
-						robot.goStraight(2.8, FAST_DRIVE_POWER);
+						robot.goStraight(2.6, FAST_DRIVE_POWER);
 						robot.decel(0.5, 0);
 
 						updateRunningState("Secondary turn...");
@@ -420,7 +420,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 					robot.setDrivePower(0);
 					// Allow the camera time to focus:
-					robot.waitForTick(500);
+					robot.waitForTick(1500);
 					setState(STATE_SEARCHING);
 				break;
 				case STATE_SEARCHING:
@@ -430,7 +430,12 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						ticksSeeingImage++;
 						vuforia.disableFlashlight();
 
-						if(ticksSeeingImage < 8)
+						if(ticksSeeingImage == 0) {
+							robot.goCounts(500, 0.2);
+							robot.setDrivePower(0);
+						}
+
+						if(ticksSeeingImage < 5)
 							continue;
 
 						byte pass = 0;
@@ -467,22 +472,18 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 								Log.i(TAG, "Searching for beacon presence, pass #" + beaconsFound + ":" + pass + ".");
 
 								// We can't see both buttons, so move back and forth and run detection algorithm again
-								robot.goStraight(pass <= 2 ? -0.1 : 0.1, 0.2);
+								robot.goCounts(pass <= 2 ? -500 : 500, 0.2);
 
 								// Allow camera time to autofocus:
+								robot.setDrivePower(0);
 								robot.waitForTick(500);
 
-								if(pass >= 4) {
+								if(pass > 4) {
 									// We've scanned around the beacon and still can't see it
 									if(beaconsFound == 0) {
 										// If this is the first beacon, skip to the next one
-										robot.accel(0.5, 1);
-										robot.goStraight(targetSide == SIDE_LEFT ? 1.5 : 1, 1);
-										robot.decel(0.5, DRIVE_POWER);
-
-										advanceToSecondBeacon(beaconName);
-
-										setState(STATE_SEARCHING);
+										robot.goCounts(-1000, 0.2);
+										successful = true;
 									} else {
 										// Emergency stop
 										setState(STATE_FINISHED);
@@ -522,6 +523,25 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						Log.i(TAG, "*** BEACON FOUND ***");
 						Log.i(TAG, "Target color: " + (targetColor == BeaconColorResult.BeaconColor.BLUE ? "Blue" : "Red"));
 						Log.i(TAG, "Beacon colors: " + lastBeaconColor.toString());
+
+						// Beacon is already the right color:
+						if(lastBeaconColor.getLeftColor() == targetColor && lastBeaconColor.getRightColor() == targetColor) {
+							robot.accel(0.5, 1);
+							robot.goStraight(targetSide == SIDE_LEFT ? 1.5 : 1, 1);
+							robot.decel(0.5, DRIVE_POWER);
+							advanceToSecondBeacon(beaconName);
+
+							continue;
+						}
+
+						// Both sides of the beacon are the wrong color, so just score the left side:
+						if(lastBeaconColor.getLeftColor() != targetColor && lastBeaconColor.getRightColor() != targetColor) {
+							targetSide = SIDE_LEFT;
+							robot.setDrivePower(-DRIVE_POWER * 0.75);
+							setState(STATE_ALIGNING_WITH_BEACON);
+
+							continue;
+						}
 
 						// TODO: Replace goStraight call with proper combined distance from beacon offset + target side offset
 						robot.goStraight(lastBeaconPosition.getOffsetFeet(), DRIVE_POWER);
@@ -569,7 +589,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						if(beaconsFound == 2)
 							setState(STATE_FINISHED);
 						else {
+							robot.turn(-1, 0.2);
 							robot.accel(0.5, 1);
+							robot.turn(1, 0.2);
 							robot.goStraight(targetSide == SIDE_LEFT ? 1.5 : 1, 1);
 							robot.decel(0.5, DRIVE_POWER);
 

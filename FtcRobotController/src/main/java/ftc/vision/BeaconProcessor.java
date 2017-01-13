@@ -24,7 +24,7 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 		Mat rgbaFrameBak = rgbaFrame.clone();
 		//save the image in the Pictures directory
 		if(saveImages)
-			ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, startTime + "-0-cropped.png");
+			ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, startTime + "-0-cropped");
 
 		// convert image to hsv
 		Mat hsv = new Mat();
@@ -138,7 +138,7 @@ public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
 			ImageUtil.overlayImage(rgbaFrameBak, rgbaFrame, output);
 
 			if(saveImages)
-				ImageUtil.saveImage(TAG, output, Imgproc.COLOR_RGBA2BGR, "BeaconProcessor-" + startTime + "-1-processed.png");
+				ImageUtil.saveImage(TAG, output, Imgproc.COLOR_RGBA2BGR, "BeaconProcessor-" + startTime + "-1-processed");
 
 			return new ImageProcessorResult<>(startTime, output, new BeaconColorResult(left, right));
 		} else

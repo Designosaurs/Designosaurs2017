@@ -115,9 +115,14 @@ class DesignosaursHardware {
 
 	/*** Drive ***/
 
+	// Get distance in raw encoder counts
+	private double getDistanceCounts() {
+		return Math.max(getAdjustedEncoderPosition(leftMotor), getAdjustedEncoderPosition(rightMotor));
+	}
+
 	// Get current distance in feet based on the encoders, tolerant of one encoder failure
 	private double getDistance() {
-		return (double) Math.max(getAdjustedEncoderPosition(leftMotor), getAdjustedEncoderPosition(rightMotor)) / COUNTS_PER_FOOT;
+		return getDistanceCounts() / COUNTS_PER_FOOT;
 	}
 
 	// Shortcut function
@@ -138,6 +143,18 @@ class DesignosaursHardware {
 	void setShooterPower(double power) {
 		if(hardwareEnabled)
 			shooter.setPower(power);
+	}
+
+	void goCounts(double distance, double power) {
+		setDrivePower(distance > 0 ? power : -power);
+
+		distance = Math.abs(distance);
+		resetDriveEncoders();
+
+		while(getDistanceCounts() < distance) {
+			Log.i(TAG, String.valueOf(getDistanceCounts()));
+			waitForTick(10);
+		}
 	}
 
 	// Move the robot forward for the given number of feet, based on max encoder (we've had encoders die).

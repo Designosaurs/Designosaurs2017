@@ -40,7 +40,7 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
 
         // save the original image in the Pictures directory
         if(saveImages)
-            ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, "BeaconFinder-" + System.currentTimeMillis() + "-0-original.png");
+            ImageUtil.saveImage(TAG, rgbaFrame, Imgproc.COLOR_RGBA2BGR, "BeaconFinder-" + System.currentTimeMillis() + "-0-original");
 
         // apply a blur to reduce graininess of the camera, overall noise
         Imgproc.GaussianBlur(workingFrame, workingFrame, new Size(9, 9), 0);
@@ -89,8 +89,8 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
         average = Math.floor(((rightButton - leftButton) / 2) + leftButton);
 
         if(DEBUG && saveImages) {
-            ImageUtil.saveImage(TAG, darkSections, -1, "BeaconFinder-" + System.currentTimeMillis() + "-1-black.png");
-            ImageUtil.saveImage(TAG, processedFrame, -1, "BeaconFinder-" + System.currentTimeMillis() + "-2-processed.png");
+            ImageUtil.saveImage(TAG, darkSections, -1, "BeaconFinder-" + System.currentTimeMillis() + "-1-black");
+            ImageUtil.saveImage(TAG, processedFrame, -1, "BeaconFinder-" + System.currentTimeMillis() + "-2-processed");
         }
 
         Log.i(TAG, "Buttons found: " + buttonsFound);
