@@ -10,19 +10,22 @@ public class ShooterManager extends Thread {
 	private static final double HOMING_POWER = 0.1;
 	// Power to shoot with
 	private static final double POWER = 1;
+	// Distance to move the plastic piece
 	private static final double COUNTS_PER_ROTATION = DesignosaursHardware.COUNTS_PER_REVOLUTION * 1.2;
+	// Whether to log states
+	private static final boolean LOGGING = false;
 
 	/* Available states */
 	static final byte STATE_AT_BASE = 0;
 	static final byte STATE_HOMING = 1;
 	static final byte STATE_SCORING = 2;
 
+	/* Runtime */
 	private byte state = STATE_AT_BASE;
-
 	private int ticksInState = 0;
 	private boolean isRunning = true;
 	private int lastPosition = 0;
-	private ArrayList<Integer> positionHistory = new ArrayList<>(40);
+	private ArrayList<Integer> positionHistory = new ArrayList<>(80);
 
 	// Expected change in encoder counts per loop, used to detect whether it's home/stuck
 	private static final int MOVEMENT_THRESHOLD = 10;
@@ -78,7 +81,8 @@ public class ShooterManager extends Thread {
 				Thread.sleep(5); // careful when adjusting loop time, that affects length of movement history
 			}
 		} catch(InterruptedException e) {
-			Log.i(TAG, "Shutting down...");
+			if(LOGGING)
+				Log.i(TAG, "Shutting down...");
 			shutdown();
 		}
 	}
@@ -103,10 +107,12 @@ public class ShooterManager extends Thread {
 
 	// Use to progress state machine
 	public void setStatus(byte state) {
-		Log.i(TAG, "*** SWITCHING STATES ***");
-		Log.i(TAG, "Previous state: " + this.state);
-		Log.i(TAG, "New state: " + state);
-		Log.i(TAG, "Time in state: " + ticksInState);
+		if(LOGGING) {
+			Log.i(TAG, "*** SWITCHING STATES ***");
+			Log.i(TAG, "Previous state: " + this.state);
+			Log.i(TAG, "New state: " + state);
+			Log.i(TAG, "Time in state: " + ticksInState);
+		}
 
 		this.state = state;
 

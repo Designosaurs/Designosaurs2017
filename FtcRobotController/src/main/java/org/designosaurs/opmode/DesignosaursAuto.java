@@ -2,15 +2,11 @@ package org.designosaurs.opmode;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.util.Log;
 
 import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.vuforia.Image;
 import com.vuforia.Matrix34F;
 import com.vuforia.Tool;
 import com.vuforia.Vec3F;
@@ -19,7 +15,6 @@ import org.designosaurs.Vector2;
 import org.designosaurs.VuforiaLocalizerImplSubclass;
 import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
@@ -42,7 +37,6 @@ import ftc.vision.BeaconColorResult;
 import ftc.vision.BeaconFinder;
 import ftc.vision.BeaconPositionResult;
 import ftc.vision.BeaconProcessor;
-import ftc.vision.ImageUtil;
 
 @Autonomous(name = "Designosaurs Autonomous", group = "Auto")
 public class DesignosaursAuto extends DesignosaursOpMode {
@@ -198,6 +192,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		}
 	};
 
+	// Get points to crop to, where we think the image is
 	private void recalculateCriticalPoints() {
 		if(lastPose != null) {
 			start = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(210, 300, 0))); // 127, 92, 0
@@ -205,7 +200,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			center = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(0, 0, 0)));
 		}
 	}
-	
+
+	// Sanitize beacon cropping range in case it's outside the camera's viewport
 	private void boundPoints() {
 		if(start.x < 0)
 			start.x = 0;
@@ -232,6 +228,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			end.y = IMAGE_HEIGHT;
 	}
 
+	// Perform crop based on critical points, and return cropped image data from Vuforia frame
 	private Mat getRegionAboveBeacon() {
 		// Timing is wrong ಠ_ಠ
 		if(vuforia.rgb == null || start == null || end == null)
@@ -267,6 +264,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		return output;
 	}
 
+	// Force the robot to not see the first beacon again and go back
 	void advanceToSecondBeacon(String beaconName) {
 		lastScoredBeaconName = beaconName;
 		beaconsFound++;
@@ -464,6 +462,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 							else {
 								pass++;
 
+								Log.i(TAG, "Searching for beacon presence, pass #" + beaconsFound + ":" + pass + ".");
+
 								// We can't see both buttons, so move back and forth and run detection algorithm again
 								robot.goStraight(pass <= 2 ? -0.2 : 0.2, 0.2);
 
@@ -592,10 +592,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 	// Please use this instead of directly updating state machine
 	private void setState(byte newState) {
-		Log.i(TAG, "*** SWITCHING STATES ***");
-		Log.i(TAG, "New state: " + String.valueOf(newState));
-		Log.i(TAG, "Time in previous state: " + String.valueOf(ticksInState));
-
 		switch(newState) {
 			case STATE_SEARCHING:
 				robot.setDrivePower(DRIVE_POWER);
@@ -608,6 +604,10 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		}
 
 		autonomousState = newState;
+		Log.i(TAG, "*** SWITCHING STATES ***");
+		Log.i(TAG, "New state: " + getStateMessage());
+		Log.i(TAG, "Time in previous state: " + String.valueOf(ticksInState));
+
 		ticksInState = 0;
 	}
 

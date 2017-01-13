@@ -13,6 +13,8 @@ public class ButtonPusherManager extends Thread {
 	private static final double TARGET_IDLE_POSITION = DesignosaursHardware.COUNTS_PER_REVOLUTION * 0.25;
 	// Allowance for the button pusher being in the home position, in encoder counts
 	private static final double AT_BASE_TOLERANCE = 50;
+	// Whether to log states
+	private static final boolean LOGGING = false;
 
 	/* Available states */
 	static final byte STATE_HOMING = 0;
@@ -95,7 +97,8 @@ public class ButtonPusherManager extends Thread {
 				Thread.sleep(5); // careful when adjusting loop time, that affects length of movement history
 			}
 		} catch(InterruptedException e) {
-			Log.i(TAG, "Shutting down...");
+			if(LOGGING)
+				Log.i(TAG, "Shutting down...");
 			shutdown();
 		}
 	}
@@ -122,10 +125,12 @@ public class ButtonPusherManager extends Thread {
 
 	// Use to progress state machine
 	public void setStatus(byte state) {
-		Log.i(TAG, "*** SWITCHING STATES ***");
-		Log.i(TAG, "Previous state: " + this.state);
-		Log.i(TAG, "New state: " + state);
-		Log.i(TAG, "Time in state: " + ticksInState);
+		if(LOGGING) {
+			Log.i(TAG, "*** SWITCHING STATES ***");
+			Log.i(TAG, "Previous state: " + this.state);
+			Log.i(TAG, "New state: " + state);
+			Log.i(TAG, "Time in state: " + ticksInState);
+		}
 
 		this.state = state;
 

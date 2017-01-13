@@ -35,6 +35,6 @@ public class BeaconPositionResult {
 
 	@Override
 	public String toString() {
-		return "Offset is " + getOffsetFeet() + " feet. Beacon exists from [" + startX + ", " + endX + "] px" + (conclusive ? "" : "(inconclusive)") + ".";
+		return conclusive ? "Offset is " + getOffsetFeet() + " feet. Beacon exists from [" + startX + ", " + endX + "] px." : "Inconclusive, cannot see entire beacon.";
 	}
 }
