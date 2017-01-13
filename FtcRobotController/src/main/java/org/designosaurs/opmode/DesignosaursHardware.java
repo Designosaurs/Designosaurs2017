@@ -18,7 +18,7 @@ import java.text.DecimalFormat;
 class DesignosaursHardware {
 	// Disable this to run the robot without sensors/motors, for testing image recognition
 	static boolean hardwareEnabled = true;
-	static boolean imuEnabled = false;
+	static boolean imuEnabled = true;
 
 	/* Hardware goes here */
 	DcMotor leftMotor = null;
@@ -42,6 +42,7 @@ class DesignosaursHardware {
 	private final String TAG = "DesignosaursHardware";
 	private DecimalFormat decimalFormat = new DecimalFormat("#.00");
 	boolean isTeleOp = false;
+	boolean hasInitializedImu = false;
 
 	DesignosaursHardware() {}
 
@@ -144,10 +145,16 @@ class DesignosaursHardware {
 	void goStraight(double feet, double power) {
 		Log.i(TAG, "Going for " + decimalFormat.format(feet) + " ft at " + (power * 100) + "% power...");
 
-		feet = Math.abs(feet);
-
 		resetDriveEncoders();
-		setDrivePower(power);
+
+		if(feet < 0) {
+			setDrivePower(-power);
+
+			feet = -feet;
+		} else
+			setDrivePower(power);
+
+		long startedAt = System.currentTimeMillis();
 
 		while(Math.abs(getDistance()) < feet)
 			try {
@@ -156,7 +163,7 @@ class DesignosaursHardware {
 				return;
 			}
 
-		Log.i(TAG, "Done.");
+		Log.i(TAG, "Done (took " + String.valueOf(System.currentTimeMillis() - startedAt) + "ms).");
 	}
 
 	// Pivot the robot, using IMU gyro values. Blocking.
@@ -237,7 +244,7 @@ class DesignosaursHardware {
 			progress = 1 - (getDistance() / feet);
 
 			setDrivePower(bezier(progress, power, originalPower));
-			waitForTick(15);
+			waitForTick(10);
 		}
 	}
 
@@ -288,9 +295,15 @@ class DesignosaursHardware {
 	/*** Sensors ***/
 
 	// Enables the Adafruit IMU gyro
-	void startOrientationTracking() {
-		if(imu != null)
+	void startOrientationTracking(boolean force) {
+		if(imu != null && (!hasInitializedImu || force)) {
 			imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
+			hasInitializedImu = true;
+		}
+	}
+
+	void startOrientationTracking() {
+		startOrientationTracking(false);
 	}
 
 	// Updates current gyro position from the I2C bus (expensive, avoid calling multiple times in a loop)

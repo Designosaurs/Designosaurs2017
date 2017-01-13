@@ -60,6 +60,15 @@ public class VuforiaLocalizerImplSubclass extends VuforiaLocalizerImpl {
 		CameraDevice.getInstance().setFlashTorchMode(true);
 	}
 
+	public void disableFlashlight() {
+		CameraDevice.getInstance().setFlashTorchMode(false);
+	}
+
+	public void forceVuforiaUpdate() {
+		CameraDevice.getInstance().stop();
+		CameraDevice.getInstance().start();
+	}
+
 	public void clearGlSurface() {
 		if(this.glSurfaceParent != null) {
 			appUtil.synchronousRunOnUiThread(new Runnable() {

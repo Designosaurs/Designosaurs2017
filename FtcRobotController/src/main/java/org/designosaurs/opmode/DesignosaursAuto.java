@@ -19,6 +19,7 @@ import org.designosaurs.Vector2;
 import org.designosaurs.VuforiaLocalizerImplSubclass;
 import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
@@ -55,14 +56,14 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private BeaconProcessor beaconProcessor = new BeaconProcessor();
 
 	/* Configuration */
-	private static final double FAST_DRIVE_POWER = 0.85;
+	private static final double FAST_DRIVE_POWER = 0.65;
 	private static final double TURN_POWER = 0.35;
-	private static final double MIN_DRIVE_POWER = 0.15;
-	private static final double DRIVE_POWER = 0.4;
-	private static final double SLOW_DOWN_AT = 3000;
-	private static final int BEACON_ALIGNMENT_TOLERANCE = 50;
-	private static final boolean SAVE_IMAGES = false;
-	private static final boolean TEST_MODE = true;
+	private static final double MIN_DRIVE_POWER = 0.2;
+	private static final double DRIVE_POWER = 0.3;
+	private static final double SLOW_DOWN_AT = 300;
+	private static final int BEACON_ALIGNMENT_TOLERANCE = 70;
+	private static final boolean SAVE_IMAGES = true;
+	private static final boolean TEST_MODE = false;
 	private static final boolean ENABLE_CAMERA_STREAMING = true;
 	private static final String TAG = "DesignosaursAuto";
 	private static final String VUFORIA_LICENCE_KEY = "ATwI0oz/////AAAAGe9HyiYVEU6pmTFAb65tOfUrioTxlZtITHRLN1h3wllaw67kJsUOHwPVDsCN0vxiKy/9Qi9NnjpkVfUnn0gwIHyKJgTYkG7+dCaJtFJlY94qa1YPCy0y4rwhVQFkDkcaCiNoiS7ZSU5KLeIABF4Gvz9qYwJJtwxWGp4fbjyu+arTOUw160+Fg5XMjoftS8FAQPx4wF33sVdGw+CYX0fHdwQzOyN0PpIwBQ9xvb8e1c76FoHF0YUZyV/q0XeR97nRj1TfnesPc+v7Z72SEDCXAAdVVS6L9u/mVAxq4zTaXsdGcVsqHeaouoGmQ/1Ey/YYShqHaRZXWwC4GsgaxO9tCkWNH+hTjFZA2pgvKVl5HmLR";
@@ -99,7 +100,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 	private int centeredPos = Integer.MAX_VALUE;
 	private long lastTelemetryUpdate = 0;
-	private byte teamColor = TEAM_UNSELECTED;
+	private byte teamColor = TEAM_RED;
 	private byte targetSide = SIDE_LEFT;
 	private String lastScoredBeaconName = "";
 	private Context appContext;
@@ -107,6 +108,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private int ballsShot = 0;
 	private Matrix34F lastPose;
 	private long lastFrameSentAt = 0;
+
+	/* Per-run State */
+	private long ticksSeeingImage = 0;
 
 	/* Pose Tracking Points */
 	private Vector2 center;
@@ -198,8 +202,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 	private void recalculateCriticalPoints() {
 		if(lastPose != null) {
-			start = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(220, 320, 0))); // 127, 92, 0
-			end = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-220, 180, 0))); // -127, -92, 0
+			start = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(210, 300, 0))); // 127, 92, 0
+			end = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(-210, 125, 0))); // -127, -92, 0
 			center = new Vector2(Tool.projectPoint(vuforia.getCameraCalibration(), lastPose, new Vec3F(0, 0, 0)));
 		}
 	}
@@ -313,6 +317,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			buttonPusherManager.start();
 			buttonPusherManager.setStatus(ButtonPusherManager.STATE_HOMING);
 			shooterManager.start();
+			shooterManager.setStatus(ShooterManager.STATE_AT_BASE);
 		}
 
 		beacons.activate();
@@ -362,9 +367,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 			switch(autonomousState) {
 				case STATE_SHOOTING:
-					if(shooterManager.getStatus() == ShooterManager.STATE_AT_BASE) {
-						robot.waitForTick(1000);
+					stateMessage = "Shooting...";
 
+					if(shooterManager.getStatus() == ShooterManager.STATE_AT_BASE)
 						if(ballsShot++ < 2)
 							shooterManager.setStatus(ShooterManager.STATE_SCORING);
 						else {
@@ -372,7 +377,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 							setState(STATE_INITIAL_POSITIONING);
 						}
-					}
 				break;
 				case STATE_INITIAL_POSITIONING:
 					robot.startOrientationTracking();
@@ -383,53 +387,61 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					}
 
 					updateRunningState("Accelerating...");
-					robot.accel(0.8, 0.4);
+					robot.accel(0.2, TURN_POWER);
 
 					if(teamColor == TEAM_RED) {
 						updateRunningState("Initial turn...");
-						robot.turn(-35, 0.3);
+						robot.turn(-35, TURN_POWER);
 
 						updateRunningState("Secondary move...");
 						robot.accel(0.5, FAST_DRIVE_POWER);
-						robot.goStraight(1.67, FAST_DRIVE_POWER);
-						robot.decel(0.5, 0.1);
+						robot.goStraight(3.35, FAST_DRIVE_POWER);
 
 						updateRunningState("Secondary turn...");
-						robot.turn(34, TURN_POWER);
+						robot.turn(35, 0.2);
 					} else {
 						updateRunningState("Initial turn...");
 						robot.turn(40, 0.3);
 
 						updateRunningState("Secondary move...");
 						robot.accel(0.5, FAST_DRIVE_POWER);
-						robot.goStraight(1.75, FAST_DRIVE_POWER);
-						robot.decel(0.5, 0.1);
+						robot.goStraight(2.75, FAST_DRIVE_POWER);
+						robot.decel(0.7, TURN_POWER);
 
 						updateRunningState("Secondary turn...");
 						robot.turn(-39, TURN_POWER);
 					}
 
+					robot.setDrivePower(0);
+					// Allow the camera time to focus:
+					robot.waitForTick(500);
 					setState(STATE_SEARCHING);
 				break;
 				case STATE_SEARCHING:
 					if(Math.abs(getRelativePosition()) < BEACON_ALIGNMENT_TOLERANCE) {
 						stateMessage = "Analysing beacon data...";
 						robot.setDrivePower(0);
+						ticksSeeingImage++;
+						vuforia.disableFlashlight();
 
-						Mat image = getRegionAboveBeacon();
-						if(image == null || vuforia.rgb == null) {
-							Log.w(TAG, "No frame! ॓_॔");
-							robot.setDrivePower(MIN_DRIVE_POWER);
-
+						if(ticksSeeingImage < 8)
 							continue;
-						}
 
 						byte pass = 0;
 						boolean successful = false;
 						BeaconPositionResult lastBeaconPosition = null;
 						int[] range = {0, 500};
+						Mat image = null;
 
 						while(!successful) {
+							image = getRegionAboveBeacon();
+							if(image == null || vuforia.rgb == null) {
+								Log.w(TAG, "No frame! ॓_॔");
+								robot.setDrivePower(MIN_DRIVE_POWER);
+
+								continue;
+							}
+
 							lastBeaconPosition = beaconFinder.process(System.currentTimeMillis(), image, SAVE_IMAGES).getResult();
 							range = lastBeaconPosition.getRangePixels();
 
@@ -445,17 +457,43 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 								successful = true;
 							else {
 								pass++;
+								robot.goStraight(pass <= 2 ? -0.2 : 0.2, 0.2);
 
-								robot.goStraight(pass == 1 ? -0.3 : 0.6, DRIVE_POWER);
-								robot.setDrivePower(0);
+								if(pass >= 4) {
+									// Failed :(
+									if(beaconsFound == 0) {
+										robot.accel(0.5, 1);
+										robot.goStraight(targetSide == SIDE_LEFT ? 1.5 : 1, 1);
+										robot.decel(0.5, DRIVE_POWER);
+										lastScoredBeaconName = beaconName;
+										beaconsFound++;
+										centeredPos = Integer.MAX_VALUE;
+
+										setState(STATE_SEARCHING);
+									} else
+										setState(STATE_FINISHED);
+								}
 							}
 						}
+
+						if(autonomousState != STATE_SEARCHING)
+							continue;
 
 						// Change the values in the following line for how much off the larger image we crop (y-wise,
 						// the x axis is controlled by where the robot thinks the beacon is, see BeaconFinder).
 						// TODO: Tune this based on actual field
 						Log.i(TAG, "Source image is " + image.height() + "px by " + image.width() + "px");
-						Mat croppedImageRaw = new Mat(image, new Rect(range[0], 0, range[1] - range[0], image.height() > 50 ? image.height() - 50 : image.height()));
+
+						int width = range[1] - range[0];
+						Log.i(TAG, "X: " + range[0] + " Y: 0, WIDTH: " + width + ", HEIGHT: " + (image.height() > 50 ? image.height() - 50 : image.height()));
+
+						if(range[0] < 0)
+							range[0] = 0;
+
+						if(width < 0)
+							width = image.width() - range[0];
+
+						Mat croppedImageRaw = new Mat(image, new Rect(range[0], 0, width, image.height() > 50 ? image.height() - 50 : image.height()));
 						Mat croppedImage = new Mat();
 						Imgproc.resize(croppedImageRaw, croppedImage, new Size(), 0.5, 0.5, Imgproc.INTER_LINEAR);
 
@@ -483,9 +521,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						robot.resetDriveEncoders();
 
 						if(getRelativePosition() > 0 && getRelativePosition() != Integer.MAX_VALUE)
-							robot.setDrivePower(DRIVE_POWER * -0.5);
+							robot.setDrivePower(-MIN_DRIVE_POWER);
 						else
-							robot.setDrivePower(DRIVE_POWER * 0.5);
+							robot.setDrivePower(MIN_DRIVE_POWER);
 					}
 				break;
 				case STATE_ALIGNING_WITH_BEACON:
@@ -500,6 +538,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						Log.i(TAG, "//// DEPLOYING ////");
 
 						robot.setDrivePower(0);
+						robot.startOrientationTracking(true);
 						buttonPusherManager.setStatus(ButtonPusherManager.STATE_SCORING);
 
 						setState(STATE_WAITING_FOR_PLACER);
@@ -516,12 +555,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						if(beaconsFound == 2)
 							setState(STATE_FINISHED);
 						else {
-							robot.returnToZero();
-							robot.turn(-1, TURN_POWER);
-							robot.accel(0.5, FAST_DRIVE_POWER);
-							robot.goStraight(targetSide == SIDE_LEFT ? 2 : 1.5, FAST_DRIVE_POWER);
+							robot.accel(0.5, 1);
+							robot.goStraight(targetSide == SIDE_LEFT ? 1.5 : 1, 1);
 							robot.decel(0.5, DRIVE_POWER);
-							robot.returnToZero();
 
 							setState(STATE_SEARCHING);
 						}
@@ -600,7 +636,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 	// Offset here represents how far the camera is from the button pusher
 	private int getRelativePosition() {
-		int result = centeredPos - 350;
+		int result = centeredPos - 340;
 
 		if(teamColor == TEAM_BLUE)
 			result = -result;

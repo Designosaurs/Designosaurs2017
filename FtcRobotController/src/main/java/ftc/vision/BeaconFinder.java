@@ -19,7 +19,7 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
     private static final String TAG = "BeaconFinder";
 
     private Scalar blackMin = new Scalar(0, 0, 0, 0);
-    private Scalar blackMax = new Scalar(80, 80, 80, 255);
+    private Scalar blackMax = new Scalar(100, 100, 100, 255);
 
     // Distance between detected centers
     private int MINIMUM_CIRCLE_DISTANCE = 250;
@@ -27,8 +27,8 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
     private int UPPER_THRESHOLD = 50;
     private int LOWER_THRESHOLD = 30;
     // Restrictions on circle size
-    private int MIN_RADIUS = 14;
-    private int MAX_RADIUS = 25;
+    private int MIN_RADIUS = 18;
+    private int MAX_RADIUS = 50;
 
     // Distance to crop from the button to edge of beacon
     private int BEACON_CROP_DISTANCE = 100;
@@ -111,6 +111,13 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
             buttonsFound++;
         }
 
+        if(leftButton > rightButton) {
+            double initialLeft = leftButton;
+
+            leftButton = rightButton;
+            rightButton = initialLeft;
+        }
+
         average = Math.floor(((rightButton - leftButton) / 2) + leftButton);
 
         if(DEBUG && saveImages) {
@@ -118,6 +125,7 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
             saveRawMat("processed", processedFrame);
         }
 
+        Log.i(TAG, "Buttons found: " + buttonsFound);
         Log.i(TAG, "Processing finished, took " + (System.currentTimeMillis() - startTime) + "ms");
 
         return new ImageProcessorResult<>(startTime, null, new BeaconPositionResult(buttonsFound == 2, average, leftButton - BEACON_CROP_DISTANCE, rightButton + BEACON_CROP_DISTANCE));

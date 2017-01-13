@@ -13,8 +13,6 @@ public class ButtonPusherManager extends Thread {
 	private static final double TARGET_IDLE_POSITION = DesignosaursHardware.COUNTS_PER_REVOLUTION * 0.25;
 	// Allowance for the button pusher being in the home position, in encoder counts
 	private static final double AT_BASE_TOLERANCE = 50;
-	// Max value in encoder counts that the button pusher can go without going past the track
-	private static final double EXTEND_MAX = 3800;
 
 	/* Available states */
 	static final byte STATE_HOMING = 0;
@@ -47,8 +45,8 @@ public class ButtonPusherManager extends Thread {
 
 		// Routine to detect whether pusher is actually moving:
 		if(ticksInState > 20) {
-			positionHistory.remove(0);
 			positionHistory.add(Math.abs(movementDelta));
+			positionHistory.remove(0);
 
 			// Maintain a backlog of recent positions, so singlular values don't throw it off
 			for(int i = 0; i < positionHistory.size(); i++) {
@@ -85,7 +83,7 @@ public class ButtonPusherManager extends Thread {
 			break;
 			// Waiting for button pusher to collide with beacon or reach a point where it cannot safely continue.
 			case STATE_SCORING:
-				if(robot.getAdjustedEncoderPosition(robot.buttonPusher) >= EXTEND_MAX || isStuck)
+				if(isStuck)
 					setStatus(STATE_RETURNING_TO_BASE);
 		}
 	}
@@ -141,9 +139,10 @@ public class ButtonPusherManager extends Thread {
 			break;
 			case STATE_SCORING:
 				robot.setButtonPusherPower(POWER);
+
 				positionHistory.clear();
 
-				for(int i = 1; i <= 40; i++)
+				for(int i = 1; i <= 60; i++)
 					positionHistory.add(10);
 		}
 	}

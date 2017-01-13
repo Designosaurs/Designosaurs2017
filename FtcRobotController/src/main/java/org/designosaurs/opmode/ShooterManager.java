@@ -66,8 +66,6 @@ public class ShooterManager extends Thread {
 					setStatus(STATE_AT_BASE);
 			break;
 			case STATE_SCORING:
-				Log.i(TAG, String.valueOf(robot.getAdjustedEncoderPosition(robot.shooter)));
-
 				if(robot.getAdjustedEncoderPosition(robot.shooter) >= COUNTS_PER_ROTATION)
 					setStatus(STATE_AT_BASE);
 		}
