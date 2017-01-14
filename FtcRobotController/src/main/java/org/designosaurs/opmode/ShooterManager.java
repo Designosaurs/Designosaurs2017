@@ -9,7 +9,7 @@ public class ShooterManager extends Thread {
 	// Power when aligning for the first
 	private static final double HOMING_POWER = 0.1;
 	// Power to shoot with
-	private static final double POWER = 1;
+	private static final double POWER = 0.9;
 	// Distance to move the plastic piece
 	private static final double COUNTS_PER_ROTATION = DesignosaursHardware.COUNTS_PER_REVOLUTION * 2.2;
 	// Whether to log states

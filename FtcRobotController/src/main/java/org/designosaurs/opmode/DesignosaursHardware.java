@@ -224,7 +224,8 @@ class DesignosaursHardware {
 
 		while(Math.abs(getHeading() - targetDegrees) > TURN_TOLERANCE)
 			try {
-				Thread.sleep(15);
+				Thread.sleep(12);
+				Log.i(TAG, getHeading() + ", " + targetDegrees);
 				updateOrientation();
 			} catch(Exception e) {
 				return;
@@ -351,9 +352,9 @@ class DesignosaursHardware {
 
 	// Called when opmode is shut down
 	void shutdown() {
+		setDrivePower(0);
+
 		if(imu != null)
 			imu.stopAccelerationIntegration();
-
-		setDrivePower(0);
 	}
 }

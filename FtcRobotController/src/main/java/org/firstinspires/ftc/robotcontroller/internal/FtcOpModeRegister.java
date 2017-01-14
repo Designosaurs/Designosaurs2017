@@ -36,6 +36,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpModeMeta;
 import com.qualcomm.robotcore.eventloop.opmode.OpModeRegister;
 
 import org.designosaurs.opmode.DesignosaursAuto;
+import org.designosaurs.opmode.DesignosaursShooter;
 import org.designosaurs.opmode.DesignosaursTeleOp;
 import org.firstinspires.ftc.robotcontroller.external.samples.ConceptNullOp;
 
@@ -66,6 +67,7 @@ public class FtcOpModeRegister implements OpModeRegister {
 	 */
 	public void register(OpModeManager manager) {
 		manager.register(new OpModeMeta("Designosaurs Auto", OpModeMeta.Flavor.AUTONOMOUS, "Autonomous"), DesignosaursAuto.class);
+		manager.register(new OpModeMeta("Designosaurs Shooter", OpModeMeta.Flavor.AUTONOMOUS, "Autonomous"), DesignosaursShooter.class);
 		manager.register(new OpModeMeta("Designosaurs TeleOp", OpModeMeta.Flavor.TELEOP, "TeleOp"), DesignosaursTeleOp.class);
 	}
 }

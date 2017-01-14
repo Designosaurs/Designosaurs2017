@@ -383,35 +383,44 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						robot.leftMotor.setDirection(DcMotor.Direction.FORWARD);
 					}
 
-					shooterManager.setStatus(ShooterManager.STATE_SCORING);
-
 					if(teamColor == TEAM_RED) {
-						robot.accel(0.3, 0.4);
+						robot.accel(0.3, 0.5);
+						shooterManager.setStatus(ShooterManager.STATE_SCORING);
 						robot.setDrivePower(0);
-						robot.waitForTick(1500);
+						robot.waitForTick(1400);
+						robot.accel(0.3, 0.5);
+						robot.waitForTick(1400);
+						robot.goStraight(-0.2, 0.8);
 
 						updateRunningState("Initial turn...");
-						robot.turn(-35, 0.3);
+						robot.turn(-34, 0.3);
 
 						updateRunningState("Secondary move...");
 						robot.accel(0.5, FAST_DRIVE_POWER);
-						robot.goStraight(2.5, FAST_DRIVE_POWER);
+						robot.goStraight(2.8, FAST_DRIVE_POWER);
 						robot.decel(0.5, 0);
 
 						updateRunningState("Secondary turn...");
-						robot.turn(38, 0.3);
+						robot.turn(38, 0.2);
 					} else {
-						robot.waitForTick(2500);
-						robot.goStraight(-1.5, 0.4);
+						robot.goStraight(-0.3, 0.5);
+						shooterManager.setStatus(ShooterManager.STATE_SCORING);
+						robot.setDrivePower(0);
+						robot.accel(-0.3, 0.5);
+						robot.waitForTick(1400);
+						robot.goStraight(-1.1, 0.4);
+						robot.setDrivePower(0);
 
-						robot.turn(180, 0.5);
+						robot.turn(179, 0.45);
+
+						robot.goStraight(0.5, 0.4);
 
 						updateRunningState("Initial turn...");
-						robot.turn(30, 0.3);
+						robot.turn(20, 0.3);
 
 						updateRunningState("Secondary move...");
 						robot.accel(0.5, FAST_DRIVE_POWER);
-						robot.goStraight(2.7, FAST_DRIVE_POWER);
+						robot.goStraight(3.5, FAST_DRIVE_POWER);
 						robot.decel(0.5, 0);
 
 						updateRunningState("Secondary turn...");
@@ -467,14 +476,14 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 								Log.i(TAG, "Searching for beacon presence, pass #" + beaconsFound + ":" + pass + ".");
 
 								// We can't see both buttons, so move back and forth and run detection algorithm again
-								if(pass <= 2)
+								if(pass <= 3)
 									robot.goCounts(teamColor == TEAM_RED ? -400 : 400, 0.2);
 
-								if(pass <= 4 && pass >= 2)
-									robot.goCounts(teamColor == TEAM_RED ? (pass == 3 ? 1000 : 400) : -(pass == 3 ? 1000 : 400), 0.2);
+								if(pass <= 4 && pass >= 3)
+									robot.goCounts(teamColor == TEAM_RED ? 1000 : -1000, 0.2);
 
 								if(pass > 4) {
-									robot.goCounts(teamColor == TEAM_RED ? -1400 : 1400, 0.4);
+									robot.goCounts(teamColor == TEAM_RED ? -1600 : 1600, 0.4);
 									successful = true;
 								}
 
@@ -519,7 +528,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						// Beacon is already the right color:
 						if(lastBeaconColor.getLeftColor() == targetColor && lastBeaconColor.getRightColor() == targetColor) {
 							robot.accel(0.5, 1);
-							robot.goStraight(targetSide == SIDE_LEFT ? 1.5 : 1, 1);
+							robot.goStraight(targetSide == SIDE_LEFT ? 1.2 : 0.7, 1);
 							robot.decel(0.5, DRIVE_POWER);
 							advanceToSecondBeacon(beaconName);
 
@@ -560,7 +569,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					if(ticksInState > 450)
 						robot.emergencyStop();
 
-					double targetCounts = (targetSide == SIDE_LEFT) ? 1100 : 200;
+					double targetCounts = (targetSide == SIDE_LEFT) ? 1150 : 250;
 
 					if(Math.max(Math.abs(robot.getAdjustedEncoderPosition(robot.leftMotor)), Math.abs(robot.getAdjustedEncoderPosition(robot.rightMotor))) >= targetCounts) {
 						Log.i(TAG, "//// DEPLOYING ////");
@@ -581,7 +590,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						if(beaconsFound == 2 || HOTEL_MODE)
 							setState(STATE_FINISHED);
 						else {
+							robot.turn(teamColor == TEAM_RED ? -3 : 3, 0.2);
 							robot.accel(0.5, 1);
+							robot.turn(teamColor == TEAM_RED ? 2 : -2, 0.2);
 							robot.goStraight(targetSide == SIDE_LEFT ? 1.5 : 1, 1);
 							robot.decel(0.5, DRIVE_POWER);
 
