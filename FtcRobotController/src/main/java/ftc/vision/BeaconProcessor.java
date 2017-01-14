@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BeaconProcessor implements ImageProcessor<BeaconColorResult> {
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
 	private static final String TAG = "BeaconProcessor";
 	private static final double MIN_MASS = 6;
 

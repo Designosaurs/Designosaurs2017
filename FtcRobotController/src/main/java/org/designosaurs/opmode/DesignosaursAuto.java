@@ -58,7 +58,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private static final int BEACON_ALIGNMENT_TOLERANCE = 80;
 	private static final boolean SAVE_IMAGES = true;
 	private static final boolean TEST_MODE = false;
-	private static final boolean ENABLE_CAMERA_STREAMING = true;
+	private static final boolean ENABLE_CAMERA_STREAMING = false;
 	private static final String TAG = "DesignosaursAuto";
 	private static final String VUFORIA_LICENCE_KEY = "ATwI0oz/////AAAAGe9HyiYVEU6pmTFAb65tOfUrioTxlZtITHRLN1h3wllaw67kJsUOHwPVDsCN0vxiKy/9Qi9NnjpkVfUnn0gwIHyKJgTYkG7+dCaJtFJlY94qa1YPCy0y4rwhVQFkDkcaCiNoiS7ZSU5KLeIABF4Gvz9qYwJJtwxWGp4fbjyu+arTOUw160+Fg5XMjoftS8FAQPx4wF33sVdGw+CYX0fHdwQzOyN0PpIwBQ9xvb8e1c76FoHF0YUZyV/q0XeR97nRj1TfnesPc+v7Z72SEDCXAAdVVS6L9u/mVAxq4zTaXsdGcVsqHeaouoGmQ/1Ey/YYShqHaRZXWwC4GsgaxO9tCkWNH+hTjFZA2pgvKVl5HmLR";
 	// Whether to block out the garbage data in the center of the beacon, assuming that it's not taped
@@ -66,12 +66,11 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private static final boolean OBFUSCATE_MIDDLE = true;
 
 	/* State Machine */
-	private final byte STATE_SHOOTING = 0;
-	private final byte STATE_INITIAL_POSITIONING = 1;
-	private final byte STATE_SEARCHING = 2;
-	private final byte STATE_ALIGNING_WITH_BEACON = 3;
-	private final byte STATE_WAITING_FOR_PLACER = 4;
-	private final byte STATE_FINISHED = 5;
+	private final byte STATE_INITIAL_POSITIONING = 0;
+	private final byte STATE_SEARCHING = 1;
+	private final byte STATE_ALIGNING_WITH_BEACON = 2;
+	private final byte STATE_WAITING_FOR_PLACER = 3;
+	private final byte STATE_FINISHED = 4;
 
 	/* Team Colors */
 	private final byte TEAM_UNSELECTED = 0;
@@ -87,14 +86,14 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	private final int IMAGE_HEIGHT = 720;
 
 	/* Current State */
-	private byte autonomousState = STATE_SHOOTING;
+	private byte autonomousState = STATE_INITIAL_POSITIONING;
 	private int ticksInState = 0;
 	private String stateMessage = "Starting...";
 	private byte beaconsFound = 0;
 
 	private int centeredPos = Integer.MAX_VALUE;
 	private long lastTelemetryUpdate = 0;
-	private byte teamColor = TEAM_RED;
+	private byte teamColor = TEAM_UNSELECTED;
 	private byte targetSide = SIDE_LEFT;
 	private String lastScoredBeaconName = "";
 	private Context appContext;
@@ -276,6 +275,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	@Override
 	public void runOpMode() {
 		appContext = hardwareMap.appContext;
+		long startTime;
 
 		if(TEST_MODE) {
 			DesignosaursHardware.hardwareEnabled = false;
@@ -323,6 +323,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 		}
 
 		beacons.activate();
+		startTime = System.currentTimeMillis();
 
 		long ticksSeeingImage = 0;
 		while(opModeIsActive()) {
@@ -369,23 +370,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			}
 
 			switch(autonomousState) {
-				case STATE_SHOOTING:
-					stateMessage = "Shooting...";
-
-					if(shooterManager.getStatus() == ShooterManager.STATE_AT_BASE)
-						if(ballsShot++ < 2) {
-							if(ballsShot == 2) {
-								robot.accel(0.3, TURN_POWER);
-								robot.setDrivePower(0);
-							}
-
-							shooterManager.setStatus(ShooterManager.STATE_SCORING);
-						} else {
-							shooterManager.setStatus(ShooterManager.STATE_HOMING);
-
-							setState(STATE_INITIAL_POSITIONING);
-						}
-				break;
 				case STATE_INITIAL_POSITIONING:
 					robot.startOrientationTracking();
 
@@ -394,33 +378,44 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						robot.leftMotor.setDirection(DcMotor.Direction.FORWARD);
 					}
 
+					shooterManager.setStatus(ShooterManager.STATE_SCORING);
+
 					if(teamColor == TEAM_RED) {
+						robot.accel(0.3, 0.4);
+						robot.setDrivePower(0);
+						robot.waitForTick(1500);
+
 						updateRunningState("Initial turn...");
 						robot.turn(-35, 0.3);
 
 						updateRunningState("Secondary move...");
 						robot.accel(0.5, FAST_DRIVE_POWER);
-						robot.goStraight(2.55, FAST_DRIVE_POWER);
+						robot.goStraight(2.5, FAST_DRIVE_POWER);
 						robot.decel(0.5, 0);
 
 						updateRunningState("Secondary turn...");
-						robot.turn(40, 0.2);
+						robot.turn(38, 0.3);
 					} else {
+						robot.waitForTick(2000);
+						robot.goStraight(-1.5, 0.4);
+
+						robot.turn(180, 0.5);
+
 						updateRunningState("Initial turn...");
-						robot.turn(40, 0.3);
+						robot.turn(30, 0.3);
 
 						updateRunningState("Secondary move...");
 						robot.accel(0.5, FAST_DRIVE_POWER);
-						robot.goStraight(2.6, FAST_DRIVE_POWER);
+						robot.goStraight(2.7, FAST_DRIVE_POWER);
 						robot.decel(0.5, 0);
 
 						updateRunningState("Secondary turn...");
-						robot.turn(-39, TURN_POWER);
+						robot.turn(-35, 0.3);
 					}
 
 					robot.setDrivePower(0);
 					// Allow the camera time to focus:
-					robot.waitForTick(1500);
+					robot.waitForTick(1000);
 					setState(STATE_SEARCHING);
 				break;
 				case STATE_SEARCHING:
@@ -430,8 +425,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						ticksSeeingImage++;
 						vuforia.disableFlashlight();
 
-						if(ticksSeeingImage == 0) {
-							robot.goCounts(500, 0.2);
+						if(ticksSeeingImage == 1) {
+							robot.goCounts(400, 0.2);
 							robot.setDrivePower(0);
 						}
 
@@ -472,23 +467,17 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 								Log.i(TAG, "Searching for beacon presence, pass #" + beaconsFound + ":" + pass + ".");
 
 								// We can't see both buttons, so move back and forth and run detection algorithm again
-								robot.goCounts(pass <= 2 ? -500 : 500, 0.2);
+								if(pass <= 2)
+									robot.goCounts(teamColor == TEAM_RED ? -400 : 400, 0.2);
+
+								if(pass == 3) {
+									robot.goCounts(teamColor == TEAM_RED ? 1000 : -1000, 0.2);
+									successful = true;
+								}
 
 								// Allow camera time to autofocus:
 								robot.setDrivePower(0);
-								robot.waitForTick(500);
-
-								if(pass > 4) {
-									// We've scanned around the beacon and still can't see it
-									if(beaconsFound == 0) {
-										// If this is the first beacon, skip to the next one
-										robot.goCounts(-1000, 0.2);
-										successful = true;
-									} else {
-										// Emergency stop
-										setState(STATE_FINISHED);
-									}
-								}
+								robot.waitForTick(100);
 							}
 						}
 
@@ -589,9 +578,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						if(beaconsFound == 2)
 							setState(STATE_FINISHED);
 						else {
-							robot.turn(-1, 0.2);
 							robot.accel(0.5, 1);
-							robot.turn(1, 0.2);
 							robot.goStraight(targetSide == SIDE_LEFT ? 1.5 : 1, 1);
 							robot.decel(0.5, DRIVE_POWER);
 
@@ -639,8 +626,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	// Gets written to the driver station to explain the current state
 	private String getStateMessage() {
 		switch(autonomousState) {
-			case STATE_SHOOTING:
-				return "shooting";
 			case STATE_INITIAL_POSITIONING:
 				return "initial positioning";
 			case STATE_SEARCHING:

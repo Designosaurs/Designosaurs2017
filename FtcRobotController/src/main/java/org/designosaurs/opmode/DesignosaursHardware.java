@@ -151,10 +151,8 @@ class DesignosaursHardware {
 		distance = Math.abs(distance);
 		resetDriveEncoders();
 
-		while(getDistanceCounts() < distance) {
-			Log.i(TAG, String.valueOf(getDistanceCounts()));
+		while(Math.abs(getDistanceCounts()) < distance)
 			waitForTick(10);
-		}
 	}
 
 	// Move the robot forward for the given number of feet, based on max encoder (we've had encoders die).

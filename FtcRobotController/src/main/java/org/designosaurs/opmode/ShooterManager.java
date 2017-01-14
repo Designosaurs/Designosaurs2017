@@ -11,7 +11,7 @@ public class ShooterManager extends Thread {
 	// Power to shoot with
 	private static final double POWER = 1;
 	// Distance to move the plastic piece
-	private static final double COUNTS_PER_ROTATION = DesignosaursHardware.COUNTS_PER_REVOLUTION * 1.2;
+	private static final double COUNTS_PER_ROTATION = DesignosaursHardware.COUNTS_PER_REVOLUTION * 2.2;
 	// Whether to log states
 	private static final boolean LOGGING = false;
 
