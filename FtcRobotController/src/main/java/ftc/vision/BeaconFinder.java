@@ -22,8 +22,8 @@ public class BeaconFinder implements ImageProcessor<BeaconPositionResult> {
     private int UPPER_THRESHOLD = 50;
     private int LOWER_THRESHOLD = 30;
     // Restrictions on circle size
-    private int MIN_RADIUS = 20;
-    private int MAX_RADIUS = 90;
+    private int MIN_RADIUS = 15;
+    private int MAX_RADIUS = 50;
 
     // Distance to crop from the button to edge of beacon
     private int BEACON_CROP_DISTANCE = 100;

@@ -41,7 +41,7 @@ import ftc.vision.BeaconProcessor;
 @Autonomous(name = "Designosaurs Autonomous", group = "Auto")
 public class DesignosaursAuto extends DesignosaursOpMode {
 	/* Hardware */
-	private DesignosaursHardware robot = new DesignosaursHardware();
+	private DesignosaursHardware robot = new DesignosaursHardware(this);
 	private ButtonPusherManager buttonPusherManager = new ButtonPusherManager(robot);
 	private ShooterManager shooterManager = new ShooterManager(robot);
 
@@ -64,6 +64,8 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	// Whether to block out the garbage data in the center of the beacon, assuming that it's not taped
 	// The field setup guide says it should be taped on the inside, I have yet to see one configured as such
 	private static final boolean OBFUSCATE_MIDDLE = true;
+
+	private static final boolean HOTEL_MODE = false;
 
 	/* State Machine */
 	private final byte STATE_INITIAL_POSITIONING = 0;
@@ -322,6 +324,9 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 			shooterManager.setStatus(ShooterManager.STATE_AT_BASE);
 		}
 
+		if(HOTEL_MODE)
+			setState(STATE_SEARCHING);
+
 		beacons.activate();
 		startTime = System.currentTimeMillis();
 
@@ -396,7 +401,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						updateRunningState("Secondary turn...");
 						robot.turn(38, 0.3);
 					} else {
-						robot.waitForTick(2000);
+						robot.waitForTick(2500);
 						robot.goStraight(-1.5, 0.4);
 
 						robot.turn(180, 0.5);
@@ -424,11 +429,6 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						robot.setDrivePower(0);
 						ticksSeeingImage++;
 						vuforia.disableFlashlight();
-
-						if(ticksSeeingImage == 1) {
-							robot.goCounts(400, 0.2);
-							robot.setDrivePower(0);
-						}
 
 						if(ticksSeeingImage < 5)
 							continue;
@@ -470,8 +470,11 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 								if(pass <= 2)
 									robot.goCounts(teamColor == TEAM_RED ? -400 : 400, 0.2);
 
-								if(pass == 3) {
-									robot.goCounts(teamColor == TEAM_RED ? 1000 : -1000, 0.2);
+								if(pass <= 4 && pass >= 2)
+									robot.goCounts(teamColor == TEAM_RED ? (pass == 3 ? 1000 : 400) : -(pass == 3 ? 1000 : 400), 0.2);
+
+								if(pass > 4) {
+									robot.goCounts(teamColor == TEAM_RED ? -1400 : 1400, 0.4);
 									successful = true;
 								}
 
@@ -557,7 +560,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					if(ticksInState > 450)
 						robot.emergencyStop();
 
-					double targetCounts = (targetSide == SIDE_LEFT) ? 900 : 75;
+					double targetCounts = (targetSide == SIDE_LEFT) ? 1100 : 200;
 
 					if(Math.max(Math.abs(robot.getAdjustedEncoderPosition(robot.leftMotor)), Math.abs(robot.getAdjustedEncoderPosition(robot.rightMotor))) >= targetCounts) {
 						Log.i(TAG, "//// DEPLOYING ////");
@@ -575,7 +578,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 					if((buttonPusherManager.getStatus() != ButtonPusherManager.STATE_SCORING && buttonPusherManager.getTicksInState() >= 10) || buttonPusherManager.getStatus() == ButtonPusherManager.STATE_AT_BASE) {
 						advanceToSecondBeacon(beaconName);
 
-						if(beaconsFound == 2)
+						if(beaconsFound == 2 || HOTEL_MODE)
 							setState(STATE_FINISHED);
 						else {
 							robot.accel(0.5, 1);
@@ -658,7 +661,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 	// Offset here represents how far the camera is from the button pusher
 	private int getRelativePosition() {
 		// Adjust the offset for the button pusher -> camera distance
-		int result = centeredPos - 340;
+		int result = centeredPos - 450;
 
 		if(teamColor == TEAM_BLUE)
 			result = -result;

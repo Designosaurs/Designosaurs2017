@@ -43,6 +43,7 @@ class DesignosaursHardware {
 	private DecimalFormat decimalFormat = new DecimalFormat("#.00");
 	boolean isTeleOp = false;
 	boolean hasInitializedImu = false;
+	DesignosaursAuto parent = null;
 
 	DesignosaursHardware() {}
 
@@ -51,6 +52,10 @@ class DesignosaursHardware {
 
 		if(isTeleOp)
 			imuEnabled = false;
+	}
+
+	DesignosaursHardware(DesignosaursAuto parent) {
+		this.parent = parent;
 	}
 
 	// Called in initialization, before start. Does not initialize IMU.
@@ -251,8 +256,11 @@ class DesignosaursHardware {
 
 	// Decelerates from current max drive power to power
 	void decel(double feet, double power) {
+		Log.i(TAG, "Decelerating - " + feet + " at " + (power * 100) + "% power...");
 		double progress,
 			   originalPower = Math.max(leftMotor.getPower(), rightMotor.getPower());
+
+		long startedAt = System.currentTimeMillis();
 
 		resetDriveEncoders();
 		while(getDistance() <= feet) {
@@ -261,12 +269,16 @@ class DesignosaursHardware {
 			setDrivePower(bezier(progress, power, originalPower));
 			waitForTick(10);
 		}
+
+		Log.i(TAG, "Done, took " + (System.currentTimeMillis() - startedAt) + "ms");
 	}
 
 	// Halts thread, great for debugging
 	void emergencyStop() {
 		try {
-			Thread.sleep(Integer.MAX_VALUE);
+			while(parent == null || !parent.isStopRequested())
+				Thread.sleep(10);
+
 		} catch(InterruptedException e) {
 			shutdown();
 		}
