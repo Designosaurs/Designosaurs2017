@@ -329,6 +329,7 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 
 		beacons.activate();
 		startTime = System.currentTimeMillis();
+		robot.startTimer();
 
 		long ticksSeeingImage = 0;
 		while(opModeIsActive()) {
@@ -408,19 +409,17 @@ public class DesignosaursAuto extends DesignosaursOpMode {
 						robot.setDrivePower(0);
 						robot.accel(-0.3, 0.5);
 						robot.waitForTick(1400);
-						robot.goStraight(-1.1, 0.4);
+						robot.goStraight(-0.8, 0.4);
 						robot.setDrivePower(0);
 
 						robot.turn(179, 0.45);
 
-						robot.goStraight(0.5, 0.4);
-
 						updateRunningState("Initial turn...");
-						robot.turn(20, 0.3);
+						robot.turn(22, 0.3);
 
 						updateRunningState("Secondary move...");
 						robot.accel(0.5, FAST_DRIVE_POWER);
-						robot.goStraight(3.5, FAST_DRIVE_POWER);
+						robot.goStraight(4.1, FAST_DRIVE_POWER);
 						robot.decel(0.5, 0);
 
 						updateRunningState("Secondary turn...");

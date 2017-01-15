@@ -36,15 +36,22 @@ public class DesignosaursShooter extends LinearOpMode {
 		setInitStatus("Ready to start!");
 		waitForStart();
 
-		robot.accel(0.3, 0.5);
-		shooterManager.setStatus(ShooterManager.STATE_SCORING);
+		robot.goStraight(1.2, 1);
 		robot.setDrivePower(0);
-		robot.waitForTick(1400);
-		robot.accel(0.3, 0.5);
+
+		//robot.accel(0.3, 0.5);
+		robot.shooter.setPower(0.9);
+		//robot.setDrivePower(0);
+		//robot.waitForTick(1400);
+		//robot.accel(0.3, 0.5);
+		//robot.setDrivePower(0);
 		robot.waitForTick(3000);
-		shooterManager.setStatus(ShooterManager.STATE_HOMING);
+		robot.shooter.setPower(0);
+		//shooterManager.setStatus(ShooterManager.STATE_HOMING);
+		/*
 		robot.waitForTick(10000);
 		robot.goStraight(4.5, 1);
 		robot.setDrivePower(0);
+		*/
 	}
 }

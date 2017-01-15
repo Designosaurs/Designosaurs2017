@@ -45,6 +45,8 @@ class DesignosaursHardware {
 	boolean hasInitializedImu = false;
 	DesignosaursAuto parent = null;
 
+	private long timer = 0;
+
 	DesignosaursHardware() {}
 
 	DesignosaursHardware(boolean isTeleOp) {
@@ -151,12 +153,15 @@ class DesignosaursHardware {
 	}
 
 	void goCounts(double distance, double power) {
+		if(parent != null && parent.isStopRequested())
+			return;
+
 		setDrivePower(distance > 0 ? power : -power);
 
 		distance = Math.abs(distance);
 		resetDriveEncoders();
 
-		while(Math.abs(getDistanceCounts()) < distance)
+		while(Math.abs(getDistanceCounts()) < distance && (timer != 0 ? System.currentTimeMillis() > timer - 25000 : true))
 			waitForTick(10);
 	}
 
@@ -176,7 +181,7 @@ class DesignosaursHardware {
 
 		long startedAt = System.currentTimeMillis();
 
-		while(Math.abs(getDistance()) < feet)
+		while(Math.abs(getDistance()) < feet && (timer != 0 ? System.currentTimeMillis() > timer - 25000 : true))
 			try {
 				Thread.sleep(1);
 			} catch(Exception e) {
@@ -186,8 +191,15 @@ class DesignosaursHardware {
 		Log.i(TAG, "Done (took " + String.valueOf(System.currentTimeMillis() - startedAt) + "ms).");
 	}
 
+	void startTimer() {
+		timer = System.currentTimeMillis();
+	}
+
 	// Pivot the robot, using IMU gyro values. Blocking.
 	void turn(double degrees, double power) {
+		if(parent != null && parent.isStopRequested())
+			return;
+
 		DcMotor primaryMotor, secondaryMotor;
 		double targetDegrees;
 
@@ -222,7 +234,7 @@ class DesignosaursHardware {
 		primaryMotor.setPower(power);
 		secondaryMotor.setPower(-power);
 
-		while(Math.abs(getHeading() - targetDegrees) > TURN_TOLERANCE)
+		while(Math.abs(getHeading() - targetDegrees) > TURN_TOLERANCE && (timer != 0 ? System.currentTimeMillis() > timer - 25000 : true))
 			try {
 				Thread.sleep(12);
 				Log.i(TAG, getHeading() + ", " + targetDegrees);
@@ -244,10 +256,13 @@ class DesignosaursHardware {
 
 	// Accelerates in a quadratic bezier curve from 0.3 -> power
 	void accel(double feet, double power) {
+		if(parent != null && parent.isStopRequested())
+			return;
+
 		double progress;
 
 		resetDriveEncoders();
-		while(getDistance() <= feet) {
+		while(getDistance() <= feet && (timer != 0 ? System.currentTimeMillis() > timer - 25000 : true)) {
 			progress = getDistance() / feet;
 
 			setDrivePower(bezier(progress, 0.3, power));
@@ -257,6 +272,9 @@ class DesignosaursHardware {
 
 	// Decelerates from current max drive power to power
 	void decel(double feet, double power) {
+		if(parent != null && parent.isStopRequested())
+			return;
+
 		Log.i(TAG, "Decelerating - " + feet + " at " + (power * 100) + "% power...");
 		double progress,
 			   originalPower = Math.max(leftMotor.getPower(), rightMotor.getPower());
@@ -264,7 +282,7 @@ class DesignosaursHardware {
 		long startedAt = System.currentTimeMillis();
 
 		resetDriveEncoders();
-		while(getDistance() <= feet) {
+		while(getDistance() <= feet && (timer != 0 ? System.currentTimeMillis() > timer - 25000 : true)) {
 			progress = 1 - (getDistance() / feet);
 
 			setDrivePower(bezier(progress, power, originalPower));
@@ -277,7 +295,7 @@ class DesignosaursHardware {
 	// Halts thread, great for debugging
 	void emergencyStop() {
 		try {
-			while(parent == null || !parent.isStopRequested())
+			while(true)
 				Thread.sleep(10);
 
 		} catch(InterruptedException e) {
